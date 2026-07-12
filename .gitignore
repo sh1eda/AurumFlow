@@ -1,0 +1,141 @@
+# Python bytecode and caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.nox/
+.tox/
+
+# Coverage and test output
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs and runtime state
+logs/
+*.log
+state/
+runtime/
+paper/
+paper-ledger*.jsonl
+*.ledger.jsonl
+
+# SQLite databases used for local research or paper trading
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+
+# Generated reports and exports
+reports/
+generated_reports/
+exports/
+XAUUSD_Trading_AI_Paper.*
+XAUUSD_Trading_AI_Technical_Whitepaper.*
+arxiv_submission_*.zip
+*.csv
+*.tsv
+*_report.html
+*_report.json
+*_report.csv
+backtest_report*.csv
+backtest_*results*.csv
+feature_importance*.csv
+
+# Keep intentionally curated tiny fixtures versionable
+!examples/**/*.csv
+!examples/**/*.tsv
+!tests/fixtures/**/*.csv
+!tests/fixtures/**/*.tsv
+
+# Large datasets and local research sources
+data/
+datasets/
+market_data/
+raw_data/
+processed_data/
+docs/raw_sources/
+*.parquet
+*.feather
+*.arrow
+*.h5
+*.hdf5
+
+# Model artifacts
+models/
+artifacts/
+checkpoints/
+saved_model/
+*.pkl
+*.pickle
+*.joblib
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.model
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!*.env.example
+!*.env.sample
+!*.env.template
+!config/**/*.example.*
+!config/**/*.sample.*
+!config/**/*.template.*
+config/local.*
+config/*.local.*
+*.local.toml
+*.local.yaml
+*.local.yml
+secrets/
+*.pem
+*.key
+*.crt
+
+# Archives and temporary files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+tmp/
+temp/
+.tmp/
