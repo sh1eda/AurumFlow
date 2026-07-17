@@ -95,6 +95,10 @@ Not implemented today:
 
 Local datasets, generated reports, model artifacts, paper ledgers, and raw research-source files should stay out of git unless they are intentionally curated for release.
 
+## Isolated Event Study
+
+The research-only [XAUUSD 08:30–10:30 ET event-study framework](research/event_study_0830_0930/README.md) documents the source gate, objective concept definitions, synthetic framework tests, external data requirements, and the boundary for a future empirical study. It does not alter production strategy behavior or claim a trading edge.
+
 ## Quick Start
 
 ```bash

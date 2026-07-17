@@ -78,6 +78,8 @@ feature_importance*.csv
 !examples/**/*.tsv
 !tests/fixtures/**/*.csv
 !tests/fixtures/**/*.tsv
+!research/event_study_0830_0930/source_register.csv
+!research/event_study_0830_0930/nasdaq_to_xauusd_transfer_matrix.csv
 
 # Large datasets and local research sources
 data/
