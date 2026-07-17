@@ -1,0 +1,5 @@
+# Optional isolated dependency for Parquet input/output.
+pyarrow>=14
+
+# Official calendar archive parsing (isolated research collector only).
+beautifulsoup4>=4.12,<5

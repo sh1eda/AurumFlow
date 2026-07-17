@@ -6,12 +6,14 @@ AurumFlow is research software. This roadmap describes possible development stag
 
 - Keep deterministic rule behavior explicit and test-covered.
 - Improve examples and documentation for supported CSV inputs.
-- Expand diagnostics around accepted and rejected setups.
+- Maintain the implemented directional rule funnel and ranked outcome diagnostics.
 - Preserve no look-ahead guarantees.
 
 ## Stage 2: Diagnostics
 
-- Add richer rejection summaries for research notebooks and reports.
+- Extend the current rejection and outcome summaries for research notebooks and reports.
+- Maintain the populated data-quality, real-data funnel, and baseline backtest reports as reproducible research records.
+- Audit causal target, stop, and R:R distributions behind the measured minimum-R:R bottleneck before proposing rule changes.
 - Improve visual inspection outputs for signals and backtest events.
 - Add lightweight fixtures for repeatable examples.
 - Document common data-quality problems.

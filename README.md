@@ -12,8 +12,11 @@ This project is not financial advice. It is intended for research, experimentati
 
 - Deterministic `RULE_ONLY` signal evaluation for XAUUSD-style OHLCV data.
 - Causal event detection for swings, fair value gaps, liquidity raids, market structure shifts, and time-based liquidity levels.
-- JSON CLI output for signal, backtest, validation, and paper-signal workflows.
-- Simple R-multiple backtesting with spread, slippage, and commission inputs.
+- Strict OHLCV data-quality checks with explicit source-timezone handling and UTC normalization.
+- Structured CLI output for signal, backtest, diagnostics, validation, and paper-signal workflows.
+- Explicit pending-limit lifecycle with next-bar-first fills, bounded expiration, and conservative pre-entry invalidation.
+- LONG, SHORT, and combined rule-funnel diagnostics with survival percentages and ranked outcomes.
+- R-multiple backtesting with spread, slippage, and commission inputs.
 - Chronological walk-forward validation report for baseline research.
 - Paper ledger that records generated signals as JSON Lines without placing real orders.
 - Guarded model-adapter interface for optional ML research and validation.
@@ -33,9 +36,11 @@ OHLCV CSV
 Core modules:
 
 - `xauusd_signal.data`: CSV loading, canonical OHLCV normalization, resampling, and causal higher-timeframe joins.
+- `xauusd_signal.data_quality`: schema, timestamp, OHLC, duplicate, gap, weekend, and volume diagnostics.
 - `xauusd_signal.events`: deterministic market-event detectors.
 - `xauusd_signal.strategy`: operating modes and rule-based signal generation.
-- `xauusd_signal.backtest`: next-bar entry simulation and after-cost R-multiple reporting.
+- `xauusd_signal.backtest`: bounded pending-entry simulation and after-cost R-multiple reporting.
+- `xauusd_signal.diagnostics`: directional rule-funnel and outcome reporting.
 - `xauusd_signal.validation`: chronological walk-forward reports and hybrid-validation gates.
 - `xauusd_signal.models`: manifest-based model adapter with explicit unavailable states.
 - `xauusd_signal.paper`: append-only paper signal ledger and blocked real-order placeholder.
@@ -56,12 +61,14 @@ Version `0.1.0` is an initial research release.
 Implemented today:
 
 - Python package and CLI.
-- `signal`, `backtest`, `validate`, and `paper` commands.
+- `data-check`, `signal`, `backtest`, `diagnose`, `validate`, and `paper` commands.
 - `RULE_ONLY`, `HYBRID_RESEARCH`, and `HYBRID_VALIDATED` mode enums.
 - Deterministic rule signal generation.
 - Baseline backtesting and walk-forward reporting.
 - Paper signal recording.
 - Model adapter safeguards for research code.
+- A documented real-data quality, fixed-bias funnel, and backtest baseline using a
+  local MT5 XAUUSD M15 export. The dataset remains excluded from git.
 
 Not implemented today:
 
@@ -119,7 +126,7 @@ Expected CSV columns:
 timestamp,open,high,low,close,volume
 ```
 
-`date` or `datetime` may be used instead of `timestamp`; the loader normalizes it internally. Timestamps are parsed as UTC.
+`volume` may be omitted or nullable because the current RULE_ONLY strategy does not use it. `date`, `datetime`, or MT5-style `date` plus `time` columns may be used instead of `timestamp`. Timezone-aware values are converted to UTC. Naive timestamps are rejected unless `--source-timezone` is supplied.
 
 ## Installation
 
@@ -139,6 +146,42 @@ Run the test suite:
 ```bash
 python -m pytest
 ```
+
+## Data Import And Validation
+
+Keep local market data under the ignored `data/local/` directory. AurumFlow does not include a market dataset in the repository.
+
+Required schema:
+
+```text
+timestamp,open,high,low,close,volume
+```
+
+Place a broker or data-vendor export at `data/local/xauusd_15m.csv`, then inspect it before running diagnostics:
+
+```bash
+aurumflow data-check \
+  --csv data/local/xauusd_15m.csv \
+  --source "DATA_VENDOR_OR_BROKER" \
+  --symbol "SOURCE_SYMBOL" \
+  --broker "BROKER_OR_FEED" \
+  --price-type unknown \
+  --source-timezone America/New_York
+```
+
+Omit `--source-timezone` only when every timestamp already contains a timezone or UTC offset. The command rejects naive timestamps otherwise. DST-ambiguous or nonexistent local timestamps are also rejected rather than guessed.
+
+To write a UTC-normalized copy after structural checks pass:
+
+```bash
+aurumflow data-check \
+  --csv data/local/xauusd_15m.csv \
+  --source-timezone America/New_York \
+  --normalized-output data/local/xauusd_15m.utc.csv \
+  --format json
+```
+
+The normalized output is explicit and never drops corrupted rows. Duplicate timestamps, unsorted rows, missing or invalid OHLC values, and non-positive prices block output. Frequency gaps, weekend rows, zero-range candles, and incomplete volume are reported for source review.
 
 ## Running Signals
 
@@ -166,6 +209,24 @@ aurumflow backtest \
 ```
 
 The backtester reports closed trades, expectancy, profit factor, maximum drawdown in R, and rejection counts. It is a research tool, not a complete execution simulator.
+
+The default execution model is `PENDING_LIMIT_AFTER_FVG_CREATION`. A valid setup creates one pending limit at the FVG midpoint, which is an implementation hypothesis. The activation bar cannot fill the order. Evaluation begins on the next closed bar and remains eligible for eight bars by default. Before entry, stop-level breach, structural close, and full FVG close-through checks are enabled; ambiguous entry/invalidation bars resolve to invalidation.
+
+Backtest output keeps `entry_filled`, `entry_expired`, `setup_invalidated`, and `entry_not_reached` separate. Pending controls can be changed with `--max-entry-wait-bars` and the `--[no-]invalidate-on-*` options.
+
+## Rule Funnel Diagnostics
+
+```bash
+aurumflow diagnose \
+  --csv path/to/ohlcv.csv \
+  --mode RULE_ONLY \
+  --htf-bias BULLISH \
+  --bars 5000
+```
+
+The default human-readable report shows separate LONG, SHORT, and combined counts for each rule and order stage, survival from the previous stage, survival from evaluated bars, and ranked rejection/outcome codes. Use `--format json` for machine-readable output.
+
+Use inclusive `--start` and exclusive `--end` UTC boundaries for reproducible yearly or sub-period diagnostics.
 
 ## Walk Forward Validation
 
@@ -214,7 +275,7 @@ Signals include structured reasons, rejection reasons, setup names, invalidation
 
 ### No Look-Ahead Bias
 
-Market events are detected only after the required candles have closed. Higher-timeframe joins use closed candles only. New contributions must preserve that causal boundary.
+Market events are detected only after the required candles have closed. Higher-timeframe joins use closed candles only. Swing targets must be detected by order activation, and pending orders cannot fill on their activation bar. New contributions must preserve that causal boundary.
 
 ### Research First
 
@@ -231,8 +292,13 @@ ML is optional and must be validated before it can influence accepted signals. M
 ## Known Limitations
 
 - The CLI requires the user to provide higher-timeframe bias manually.
-- Backtesting is simplified and does not model every execution detail.
+- Backtesting is simplified, allows only one pending order or open position at a time, and does not model every execution detail.
 - Data quality, broker feeds, spread behavior, and session definitions can materially affect research results.
+- No real XAUUSD dataset is shipped. The documented baseline used a local MT5
+  export with unknown broker, quote type, and broker-verified costs; see the
+  [data-quality report](docs/implementation/DATA_QUALITY_REPORT.md),
+  [funnel report](docs/implementation/REAL_DATA_FUNNEL_REPORT.md), and
+  [backtest baseline](docs/implementation/REAL_DATA_BACKTEST_BASELINE.md).
 - The repository does not ship a validated model artifact.
 - Paper mode logs signals only and does not simulate full broker state.
 - Live execution research is not implemented.

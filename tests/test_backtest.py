@@ -10,12 +10,12 @@ from xauusd_signal.types import Decision, HtfBias, OperatingMode, Signal, TakePr
 def backtest_df():
     df = pd.DataFrame(
         {
-            "timestamp": pd.date_range("2025-01-01 00:00", periods=11, freq="15min", tz="UTC"),
-            "open": [100, 103, 103, 102, 100, 99, 101, 104, 104, 103, 105],
-            "high": [101, 105, 104, 103, 102, 101, 106, 115, 104, 103, 116],
-            "low": [99, 100, 101, 98, 99, 97, 100, 103, 101.5, 101, 103],
-            "close": [100, 104, 102, 99, 101, 100, 106, 104, 103, 102, 115],
-            "volume": [1] * 11,
+            "timestamp": pd.date_range("2025-01-01 00:00", periods=13, freq="15min", tz="UTC"),
+            "open": [100, 103, 103, 102, 100, 99, 101, 104, 103, 103, 106, 106, 110],
+            "high": [101, 105, 104, 103, 102, 101, 107, 125, 104, 105, 108, 108, 126],
+            "low": [99, 100, 101, 98, 99, 97, 100, 103, 102, 102, 106, 104.5, 104],
+            "close": [100, 104, 102, 99, 101, 100, 106, 104, 103, 104, 107, 106, 125],
+            "volume": [1] * 13,
         }
     )
     return add_closed_at(df, pd.Timedelta(minutes=15))
@@ -34,14 +34,15 @@ def test_backtest_uses_next_bar_entry_and_records_target_win():
     trade = result.trades[0]
     assert trade.decision == Decision.BUY
     assert trade.entry_index > trade.signal_index
+    assert trade.order_activation_index == trade.signal_index
     assert trade.exit_reason == "target"
     assert trade.r_multiple > 2.0
 
 
 def test_backtest_stop_first_when_stop_and_target_same_bar():
     df = backtest_df()
-    df.loc[9, "high"] = 116
-    df.loc[9, "low"] = 96
+    df.loc[12, "high"] = 126
+    df.loc[12, "low"] = 96
     result = run_backtest(
         df,
         BacktestConfig(StrategyConfig(operating_mode=OperatingMode.RULE_ONLY, htf_bias=HtfBias.BULLISH)),

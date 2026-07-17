@@ -1,0 +1,21 @@
+{
+  "critical_violations": [
+    "no_eligible_one_minute_or_tick_bid_ask_market_data",
+    "no_historical_point_in_time_release_calendar"
+  ],
+  "data_end_utc": null,
+  "data_start_utc": null,
+  "duplicate_count": null,
+  "invalid_spread_count": null,
+  "maximum_spread": null,
+  "median_spread": null,
+  "missing_event_window_count": null,
+  "missing_minute_percentage": null,
+  "per_month_coverage": [],
+  "per_year_coverage": [],
+  "row_count": null,
+  "spread_p95": null,
+  "spread_p99": null,
+  "status": "not_run_no_eligible_data",
+  "weekend_record_count": null
+}

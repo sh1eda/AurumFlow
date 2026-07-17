@@ -1,0 +1,686 @@
+{
+  "derivative_verification": {
+    "checks": {
+      "first_tick_boundary_matches": true,
+      "last_tick_boundary_matches": true,
+      "minute_bar_file_exists": true,
+      "minute_row_count_matches_metadata": true,
+      "minute_timestamps_monotonic": true,
+      "minute_timestamps_unique": true,
+      "ohlc_invariants_hold": true,
+      "open_close_spreads_nonnegative": true,
+      "tick_count_sum_matches_normalized_rows": true,
+      "tick_file_exists": true,
+      "tick_header_valid": true,
+      "timestamps_are_minute_aligned": true,
+      "timestamps_parse_as_utc": true
+    },
+    "duplicate_minute_timestamps": 0,
+    "extreme_spread_maximum": 65.93,
+    "extreme_spread_minutes": 143,
+    "extreme_spread_minutes_0800_1030_et": 4,
+    "extreme_spread_minutes_by_new_york_hour": {
+      "10": 1,
+      "13": 4,
+      "14": 3,
+      "16": 7,
+      "18": 82,
+      "22": 2,
+      "3": 28,
+      "4": 13,
+      "8": 3
+    },
+    "first_minute_utc": "2025-07-17T10:00:00+00:00",
+    "last_minute_utc": "2026-07-17T11:09:00+00:00",
+    "minute_bar_rows": 348720,
+    "minute_timestamp_reversals": 0,
+    "normalized_tick_row_count_note": "Row count is the successful writer counter and is cross-checked to the sum of one-minute tick_count; the 7.66 GB derivative was not rescanned solely to count lines.",
+    "normalized_tick_rows_from_writer": 114681897,
+    "ohlc_invariant_violations": 0,
+    "open_close_negative_spread_violations": 0,
+    "status": "PASS",
+    "tick_count_sum": 114681897,
+    "top_extreme_spread_minutes": [
+      {
+        "maximum_spread": 65.93,
+        "timestamp_new_york": "2026-07-13T18:00:00-04:00",
+        "timestamp_utc": "2026-07-13T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 62.12,
+        "timestamp_new_york": "2026-04-12T18:00:00-04:00",
+        "timestamp_utc": "2026-04-12T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 60.17,
+        "timestamp_new_york": "2026-06-01T18:00:00-04:00",
+        "timestamp_utc": "2026-06-01T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 58.93,
+        "timestamp_new_york": "2026-07-02T18:00:00-04:00",
+        "timestamp_utc": "2026-07-02T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 53.5,
+        "timestamp_new_york": "2026-02-04T18:03:00-05:00",
+        "timestamp_utc": "2026-02-04T23:03:00+00:00"
+      },
+      {
+        "maximum_spread": 53.45,
+        "timestamp_new_york": "2026-07-12T18:00:00-04:00",
+        "timestamp_utc": "2026-07-12T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 52.03,
+        "timestamp_new_york": "2026-06-25T18:00:00-04:00",
+        "timestamp_utc": "2026-06-25T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 51.4,
+        "timestamp_new_york": "2026-05-24T18:00:00-04:00",
+        "timestamp_utc": "2026-05-24T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 49.43,
+        "timestamp_new_york": "2026-06-18T18:00:00-04:00",
+        "timestamp_utc": "2026-06-18T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 45.2,
+        "timestamp_new_york": "2026-07-01T18:00:00-04:00",
+        "timestamp_utc": "2026-07-01T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 41.7,
+        "timestamp_new_york": "2026-07-14T18:00:00-04:00",
+        "timestamp_utc": "2026-07-14T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 38.16,
+        "timestamp_new_york": "2026-05-17T18:02:00-04:00",
+        "timestamp_utc": "2026-05-17T22:02:00+00:00"
+      },
+      {
+        "maximum_spread": 30.0,
+        "timestamp_new_york": "2026-07-15T18:00:00-04:00",
+        "timestamp_utc": "2026-07-15T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 27.73,
+        "timestamp_new_york": "2026-06-30T18:00:00-04:00",
+        "timestamp_utc": "2026-06-30T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 26.64,
+        "timestamp_new_york": "2026-06-07T18:00:00-04:00",
+        "timestamp_utc": "2026-06-07T22:00:00+00:00"
+      },
+      {
+        "maximum_spread": 25.03,
+        "timestamp_new_york": "2026-01-29T10:29:00-05:00",
+        "timestamp_utc": "2026-01-29T15:29:00+00:00"
+      },
+      {
+        "maximum_spread": 19.53,
+        "timestamp_new_york": "2026-04-14T18:04:00-04:00",
+        "timestamp_utc": "2026-04-14T22:04:00+00:00"
+      },
+      {
+        "maximum_spread": 18.79,
+        "timestamp_new_york": "2026-07-14T08:30:00-04:00",
+        "timestamp_utc": "2026-07-14T12:30:00+00:00"
+      },
+      {
+        "maximum_spread": 18.21,
+        "timestamp_new_york": "2026-03-01T18:05:00-05:00",
+        "timestamp_utc": "2026-03-01T23:05:00+00:00"
+      },
+      {
+        "maximum_spread": 17.45,
+        "timestamp_new_york": "2026-07-05T18:00:00-04:00",
+        "timestamp_utc": "2026-07-05T22:00:00+00:00"
+      }
+    ]
+  },
+  "generated_at_utc": "2026-07-17T14:06:18+00:00",
+  "input": {
+    "columns": [
+      "<DATE>",
+      "<TIME>",
+      "<BID>",
+      "<ASK>",
+      "<LAST>",
+      "<VOLUME>",
+      "<FLAGS>"
+    ],
+    "format": "tab-delimited ASCII text with CRLF line endings",
+    "original_overwritten": false,
+    "path": "data/local/XAUUSD_202507171300_202607171409.csv",
+    "size_bytes": 4794134791,
+    "timestamp_format": "%Y.%m.%d %H:%M:%S.%f"
+  },
+  "outputs": {
+    "excluded_rows": 0,
+    "minute_bar_rows": 348720,
+    "minute_bars": "research/event_study_0830_0930/external_data/normalized/XAUUSD_202507171300_202607171409.1m_bidask.csv",
+    "minute_bars_size_bytes": 56204048,
+    "normalized_tick_rows": 114681897,
+    "normalized_ticks": "research/event_study_0830_0930/external_data/normalized/XAUUSD_202507171300_202607171409.canonical_ticks.csv",
+    "normalized_ticks_size_bytes": 7660763863
+  },
+  "phase": "tick_data_qualification",
+  "processing": {
+    "chunk_rows": 1000000,
+    "mode": "streaming/chunked",
+    "normalization_elapsed_seconds": 441.80945308399896,
+    "rescan_note": "One earlier diagnostic pass treated incremental one-sided quote updates as incomplete snapshots. The corrected pass reconstructs only flag-consistent unchanged sides from prior quote state.",
+    "rows_retained_in_memory": "one chunk plus compact minute/distribution counters",
+    "source_scans_completed": 3,
+    "spread_scale": 100
+  },
+  "quality": {
+    "critical_reasons": [],
+    "normalization_gate_passed": true,
+    "quality_score": 89,
+    "thresholds": {
+      "maximum_invalid_or_malformed_fraction": 0.0001,
+      "maximum_negative_spread_fraction": 1e-05,
+      "timestamp_reversals_allowed": 0
+    },
+    "verdict": "WARNING",
+    "warnings": [
+      "Source timezone is strongly supported by multi-event seasonal/DST alignment but not directly confirmed by broker/feed documentation",
+      "20,486 valid quote states have spreads above 5.00 price units; their timing must be isolated before execution-cost inference",
+      "627,190 reconstructed quote states have zero spread; execution-cost research must report a nonzero-cost sensitivity rather than treating them as a general zero-cost assumption"
+    ]
+  },
+  "research_readiness": {
+    "additional_data_required": "Point-in-time U.S. economic releases with actual/consensus/vintage fields; broker commission and realized slippage/latency; trade/last/volume data for trade-price studies; and additional full years for the registered year-by-year stability requirement. Direct broker server-time documentation remains desirable corroboration but is no longer an event-time attribution blocker.",
+    "entry_geometry": "Tick and one-minute bid/ask geometry can be studied later; not authorized in this qualification phase.",
+    "execution_cost_modeling": "Observed bid/ask spreads are available. Broker commission, latency and realized slippage observations are still required for a complete execution model.",
+    "lifecycle_classification": "Market path data are sufficient after normalization, but lifecycle research must wait until Stage 1 and the economic-calendar gate are complete.",
+    "stage_1": "Market event-time attribution is safe using Europe/Helsinki with automatic DST conversion. Stage 1 is technically runnable only after a point-in-time economic calendar is supplied and explicit authorization is given; Stage 1 was not run during timezone validation."
+  },
+  "schema_version": "1.0",
+  "timezone": {
+    "confidence_grade": "STRONGLY SUPPORTED",
+    "event_time_attribution_safe_for_stage1": true,
+    "event_timezone": "America/New_York",
+    "evidence": "Multi-event official-release alignment supports an EET/EEST broker clock. Europe/Helsinki follows winter UTC+2, summer UTC+3, and the U.S.\u2013Europe DST mismatch while either fixed offset fails at least one regime. Direct broker documentation remains unavailable.",
+    "file_contains_timezone_marker": false,
+    "normalization_timezone": "UTC",
+    "source_timezone": "Europe/Helsinki",
+    "status": "strongly_supported",
+    "validation": {
+      "dataset_facts_before_validation": {
+        "canonical_ticks": {
+          "mtime_ns": 1784296771186866035,
+          "mtime_utc": "2026-07-17T13:59:31.186866+00:00",
+          "path": "research/event_study_0830_0930/external_data/normalized/XAUUSD_202507171300_202607171409.canonical_ticks.csv",
+          "size_bytes": 7660763863
+        },
+        "minute_bars": {
+          "mtime_ns": 1784296925197798508,
+          "mtime_utc": "2026-07-17T14:02:05.197798+00:00",
+          "path": "research/event_study_0830_0930/external_data/normalized/XAUUSD_202507171300_202607171409.1m_bidask.csv",
+          "size_bytes": 56204048
+        }
+      },
+      "evidence_dates": [
+        "2025-07-17",
+        "2025-07-29",
+        "2025-07-31",
+        "2025-08-01",
+        "2025-08-12",
+        "2025-09-03",
+        "2025-09-05",
+        "2025-10-28",
+        "2025-12-09",
+        "2025-12-10",
+        "2025-12-16",
+        "2025-12-18",
+        "2026-01-07",
+        "2026-01-09",
+        "2026-01-13",
+        "2026-01-30",
+        "2026-02-05",
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-13",
+        "2026-02-27",
+        "2026-03-11",
+        "2026-03-13",
+        "2026-03-18",
+        "2026-03-24",
+        "2026-03-25"
+      ],
+      "method": "scheduled-release alignment on existing tick-derived one-minute bars",
+      "model_summary": {
+        "Europe/Helsinki": {
+          "aligned_within_2_minutes": 16,
+          "alignment_rate_percent": 88.88888888888889,
+          "events": 27,
+          "events_with_selected_reaction": 18,
+          "mean_absolute_error_minutes": 6.833333333333333,
+          "median_absolute_error_minutes": 0.0,
+          "median_composite_expansion": 2.526617851819464,
+          "p90_absolute_error_minutes": 19.000000000000043,
+          "regimes": {
+            "fall_dst_mismatch": {
+              "aligned_within_2_minutes": 0,
+              "events": 1,
+              "events_with_selected_reaction": 0,
+              "median_absolute_error_minutes": null
+            },
+            "spring_dst_mismatch": {
+              "aligned_within_2_minutes": 3,
+              "events": 6,
+              "events_with_selected_reaction": 3,
+              "median_absolute_error_minutes": 0.0
+            },
+            "summer_both_dst": {
+              "aligned_within_2_minutes": 5,
+              "events": 7,
+              "events_with_selected_reaction": 5,
+              "median_absolute_error_minutes": 0.0
+            },
+            "winter_standard_time": {
+              "aligned_within_2_minutes": 8,
+              "events": 13,
+              "events_with_selected_reaction": 10,
+              "median_absolute_error_minutes": 0.0
+            }
+          }
+        },
+        "fixed UTC+2": {
+          "aligned_within_2_minutes": 11,
+          "alignment_rate_percent": 61.111111111111114,
+          "events": 27,
+          "events_with_selected_reaction": 18,
+          "mean_absolute_error_minutes": 23.5,
+          "median_absolute_error_minutes": 0.0,
+          "median_composite_expansion": 2.251018697354021,
+          "p90_absolute_error_minutes": 60.3,
+          "regimes": {
+            "fall_dst_mismatch": {
+              "aligned_within_2_minutes": 0,
+              "events": 1,
+              "events_with_selected_reaction": 0,
+              "median_absolute_error_minutes": null
+            },
+            "spring_dst_mismatch": {
+              "aligned_within_2_minutes": 3,
+              "events": 6,
+              "events_with_selected_reaction": 3,
+              "median_absolute_error_minutes": 0.0
+            },
+            "summer_both_dst": {
+              "aligned_within_2_minutes": 0,
+              "events": 7,
+              "events_with_selected_reaction": 5,
+              "median_absolute_error_minutes": 60.0
+            },
+            "winter_standard_time": {
+              "aligned_within_2_minutes": 8,
+              "events": 13,
+              "events_with_selected_reaction": 10,
+              "median_absolute_error_minutes": 0.0
+            }
+          }
+        },
+        "fixed UTC+3": {
+          "aligned_within_2_minutes": 7,
+          "alignment_rate_percent": 38.888888888888886,
+          "events": 27,
+          "events_with_selected_reaction": 18,
+          "mean_absolute_error_minutes": 36.72222222222222,
+          "median_absolute_error_minutes": 60.0,
+          "median_composite_expansion": 1.5963923014199546,
+          "p90_absolute_error_minutes": 60.0,
+          "regimes": {
+            "fall_dst_mismatch": {
+              "aligned_within_2_minutes": 0,
+              "events": 1,
+              "events_with_selected_reaction": 0,
+              "median_absolute_error_minutes": null
+            },
+            "spring_dst_mismatch": {
+              "aligned_within_2_minutes": 0,
+              "events": 6,
+              "events_with_selected_reaction": 3,
+              "median_absolute_error_minutes": 60.0
+            },
+            "summer_both_dst": {
+              "aligned_within_2_minutes": 5,
+              "events": 7,
+              "events_with_selected_reaction": 5,
+              "median_absolute_error_minutes": 0.0
+            },
+            "winter_standard_time": {
+              "aligned_within_2_minutes": 2,
+              "events": 13,
+              "events_with_selected_reaction": 10,
+              "median_absolute_error_minutes": 60.0
+            }
+          }
+        }
+      },
+      "normalized_datasets_regenerated": false,
+      "official_event_count": 27,
+      "performed_at_utc": "2026-07-17T14:51:55+00:00",
+      "regimes": [
+        "fall_dst_mismatch",
+        "spring_dst_mismatch",
+        "summer_both_dst",
+        "winter_standard_time"
+      ],
+      "release_time_counts": {
+        "08:30_ET": 20,
+        "10:00_ET": 7
+      },
+      "report": "research/event_study_0830_0930/broker_timezone_validation.md"
+    }
+  },
+  "validation": {
+    "duplicate_timestamp_rows": 1091679,
+    "elapsed_seconds": 180.11003195900048,
+    "event_coverage": {
+      "candidate_weekdays": 262,
+      "dates_with_any_ticks": 313,
+      "empty_utc_minutes_including_routine_closures": 176950,
+      "missing_timestamp_definition": "Ticks are event-driven, so an absent millisecond is not a missing record. Qualification reports empty one-minute buckets and registered event-window gaps.",
+      "missing_weekday_dates": [
+        "2026-04-03"
+      ],
+      "observed_source_minutes": 348720,
+      "timezone": "America/New_York",
+      "utc_span_minutes": 525670,
+      "windows": {
+        "delivery_0930_1000": {
+          "candidate_weekdays": 262,
+          "complete_days": 257,
+          "complete_percentage": 98.09160305343511,
+          "missing_days": [
+            "2025-09-22",
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 30
+        },
+        "equity_open_reaction_0930_0950": {
+          "candidate_weekdays": 262,
+          "complete_days": 257,
+          "complete_percentage": 98.09160305343511,
+          "missing_days": [
+            "2025-09-22",
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 20
+        },
+        "extended_impulse_0830_0845": {
+          "candidate_weekdays": 262,
+          "complete_days": 258,
+          "complete_percentage": 98.47328244274809,
+          "missing_days": [
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 15
+        },
+        "full_study_0730_1030": {
+          "candidate_weekdays": 262,
+          "complete_days": 255,
+          "complete_percentage": 97.32824427480917,
+          "missing_days": [
+            "2025-09-22",
+            "2025-10-10",
+            "2025-12-25",
+            "2026-01-01",
+            "2026-01-15",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 180
+        },
+        "initial_impulse_0830_0835": {
+          "candidate_weekdays": 262,
+          "complete_days": 258,
+          "complete_percentage": 98.47328244274809,
+          "missing_days": [
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 5
+        },
+        "pre_news_0730_0830": {
+          "candidate_weekdays": 262,
+          "complete_days": 257,
+          "complete_percentage": 98.09160305343511,
+          "missing_days": [
+            "2025-12-25",
+            "2026-01-01",
+            "2026-01-15",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 60
+        },
+        "pre_news_0800_0830": {
+          "candidate_weekdays": 262,
+          "complete_days": 257,
+          "complete_percentage": 98.09160305343511,
+          "missing_days": [
+            "2025-12-25",
+            "2026-01-01",
+            "2026-01-15",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 30
+        },
+        "retracement_0835_0930": {
+          "candidate_weekdays": 262,
+          "complete_days": 256,
+          "complete_percentage": 97.70992366412214,
+          "missing_days": [
+            "2025-09-22",
+            "2025-10-10",
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 55
+        },
+        "secondary_1000_1030": {
+          "candidate_weekdays": 262,
+          "complete_days": 258,
+          "complete_percentage": 98.47328244274809,
+          "missing_days": [
+            "2025-12-25",
+            "2026-01-01",
+            "2026-04-03",
+            "2026-07-17"
+          ],
+          "required_minutes_per_day": 30
+        }
+      }
+    },
+    "first_timestamp_source": "2025-07-17T13:00:00.428",
+    "first_timestamp_utc": "2025-07-17T10:00:00.428+00:00",
+    "flag_consistency_violations": 0,
+    "flags_distribution": {
+      "2": 26124875,
+      "4": 26239500,
+      "6": 62317522
+    },
+    "invalid_required_rows": 0,
+    "last_invalid_rows": 0,
+    "last_present_rows": 0,
+    "last_timestamp_source": "2026-07-17T14:09:53.920",
+    "last_timestamp_utc": "2026-07-17T11:09:53.920+00:00",
+    "malformed_rows": 0,
+    "monotonicity_violations": 0,
+    "negative_spread_rows": 0,
+    "non_cent_price_values": 0,
+    "parsed_rows": 114681897,
+    "parser_warnings": [],
+    "physical_data_rows": 114681897,
+    "problem_examples": [],
+    "problem_regions": [],
+    "raw_ask_missing_rows": 26124875,
+    "raw_bid_missing_rows": 26239500,
+    "reconstructed_ask_rows": 26124875,
+    "reconstructed_bid_rows": 26239500,
+    "spread": {
+      "average": 0.1591784624037044,
+      "distribution": [
+        {
+          "count": 627190,
+          "percentage": 0.546895383148397,
+          "range_price_units": "0.00"
+        },
+        {
+          "count": 11591401,
+          "percentage": 10.107437444987504,
+          "range_price_units": "0.01-0.05"
+        },
+        {
+          "count": 11145712,
+          "percentage": 9.718806796507735,
+          "range_price_units": "0.06-0.10"
+        },
+        {
+          "count": 73583373,
+          "percentage": 64.16302391649486,
+          "range_price_units": "0.11-0.20"
+        },
+        {
+          "count": 14381891,
+          "percentage": 12.540681115520787,
+          "range_price_units": "0.21-0.30"
+        },
+        {
+          "count": 2672164,
+          "percentage": 2.3300660957849346,
+          "range_price_units": "0.31-0.50"
+        },
+        {
+          "count": 451918,
+          "percentage": 0.39406219448916163,
+          "range_price_units": "0.51-1.00"
+        },
+        {
+          "count": 196535,
+          "percentage": 0.17137403996726702,
+          "range_price_units": "1.01-2.00"
+        },
+        {
+          "count": 11227,
+          "percentage": 0.009789688079540575,
+          "range_price_units": "2.01-5.00"
+        },
+        {
+          "count": 20486,
+          "percentage": 0.017863325019815465,
+          "range_price_units": ">5.00"
+        }
+      ],
+      "maximum": 65.93,
+      "median": 0.16,
+      "observations": 114681897,
+      "p95": 0.25,
+      "p99": 0.44,
+      "precision": "exact for the detected $0.01 price grid"
+    },
+    "tick_frequency": {
+      "interarrival_distribution": [
+        {
+          "count": 1091679,
+          "interval": "0 ms",
+          "percentage": 0.9519192113810186
+        },
+        {
+          "count": 71038952,
+          "interval": "1-100 ms",
+          "percentage": 61.94434734493751
+        },
+        {
+          "count": 20678667,
+          "interval": "101-250 ms",
+          "percentage": 18.03132640918319
+        },
+        {
+          "count": 8394775,
+          "interval": "251-500 ms",
+          "percentage": 7.320052504189502
+        },
+        {
+          "count": 10831977,
+          "interval": "501-1,000 ms",
+          "percentage": 9.445237110485163
+        },
+        {
+          "count": 2597778,
+          "interval": "1.001-5 s",
+          "percentage": 2.265203219172449
+        },
+        {
+          "count": 47240,
+          "interval": "5.001-30 s",
+          "percentage": 0.041192203519202365
+        },
+        {
+          "count": 422,
+          "interval": "30.001-60 s",
+          "percentage": 0.00036797438368127433
+        },
+        {
+          "count": 100,
+          "interval": "1-5 min",
+          "percentage": 8.719772125148681e-05
+        },
+        {
+          "count": 48,
+          "interval": "5-60 min",
+          "percentage": 4.185490620071367e-05
+        },
+        {
+          "count": 258,
+          "interval": ">60 min",
+          "percentage": 0.00022497012082883596
+        }
+      ],
+      "interarrival_max_ms": 266421329,
+      "interarrival_median_ms": 71.0,
+      "interarrival_p95_ms": 705.0,
+      "interarrival_p99_ms": 1466.0,
+      "populated_minutes": 348720,
+      "ticks_per_minute_max": 2956,
+      "ticks_per_minute_mean": 328.8652701307639,
+      "ticks_per_minute_median": 254.0,
+      "ticks_per_minute_p95": 939.0,
+      "ticks_per_minute_p99": 1260.0
+    },
+    "volume_invalid_or_negative_rows": 0,
+    "volume_present_rows": 0,
+    "weekend_data": {
+      "new_york_saturday_ticks": 0,
+      "new_york_sunday_ticks": 6057384,
+      "note": "Sunday New York ticks can be legitimate electronic-session reopening data; weekend counts are reported, not automatically classified as corrupt.",
+      "source_clock_saturday_ticks": 0,
+      "source_clock_sunday_ticks": 0
+    },
+    "zero_spread_rows": 627190
+  }
+}

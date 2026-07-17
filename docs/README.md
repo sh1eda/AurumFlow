@@ -5,6 +5,13 @@ This directory contains implementation notes, market-concept research notes, and
 ## Index
 
 - [Implementation Plan](implementation/IMPLEMENTATION_PLAN.md)
+- [Entry Lifecycle Analysis](implementation/ENTRY_LIFECYCLE_ANALYSIS.md)
+- [Rule Funnel Report](implementation/RULE_FUNNEL_REPORT.md)
+- [Data Quality Report](implementation/DATA_QUALITY_REPORT.md)
+- [Real-Data Funnel Report](implementation/REAL_DATA_FUNNEL_REPORT.md)
+- [Real-Data Backtest Baseline](implementation/REAL_DATA_BACKTEST_BASELINE.md)
+- [R:R Bottleneck Analysis](implementation/RR_BOTTLENECK_ANALYSIS.md)
+- [FVG Entry Geometry Research](implementation/FVG_ENTRY_RESEARCH.md)
 - [Model Integration Notes](implementation/MODEL_INTEGRATION.md)
 - [Progress Notes](implementation/PROGRESS.md)
 - [Strategy Specification](implementation/STRATEGY_SPEC.md)

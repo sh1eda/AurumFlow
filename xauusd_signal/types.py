@@ -44,6 +44,31 @@ class ValidationStatus(StrEnum):
     APPROVED = "APPROVED"
 
 
+class SetupState(StrEnum):
+    SETUP_FORMING = "SETUP_FORMING"
+    ENTRY_PENDING = "ENTRY_PENDING"
+    ENTRY_FILLED = "ENTRY_FILLED"
+    ENTRY_EXPIRED = "ENTRY_EXPIRED"
+    SETUP_INVALIDATED = "SETUP_INVALIDATED"
+    TRADE_OPEN = "TRADE_OPEN"
+    TRADE_CLOSED = "TRADE_CLOSED"
+
+
+class EntryOutcome(StrEnum):
+    ENTRY_FILLED = "entry_filled"
+    ENTRY_EXPIRED = "entry_expired"
+    SETUP_INVALIDATED = "setup_invalidated"
+    ENTRY_NOT_REACHED = "entry_not_reached"
+
+
+class EntryModel(StrEnum):
+    FVG_MIDPOINT = "FVG_MIDPOINT"
+
+
+class ExecutionModel(StrEnum):
+    PENDING_LIMIT_AFTER_FVG_CREATION = "PENDING_LIMIT_AFTER_FVG_CREATION"
+
+
 @dataclass(frozen=True)
 class EntryZone:
     low: float
@@ -83,6 +108,34 @@ class ModelPrediction:
 
 
 @dataclass(frozen=True)
+class EntryLifecycle:
+    state: SetupState
+    state_history: tuple[SetupState, ...]
+    execution_model: ExecutionModel
+    entry_model: EntryModel
+    sweep_index: int | None = None
+    sweep_confirmed_at: str = ""
+    mss_index: int | None = None
+    mss_confirmed_at: str = ""
+    fvg_start_index: int | None = None
+    fvg_end_index: int | None = None
+    fvg_created_at: str = ""
+    structural_level_price: float | None = None
+    order_activation_index: int | None = None
+    order_activation_at: str = ""
+    first_eligible_fill_index: int | None = None
+    entry_expiration_index: int | None = None
+    entry_expiration_at: str = ""
+    structural_invalidation_index: int | None = None
+    structural_invalidation_at: str = ""
+    entry_fill_index: int | None = None
+    entry_fill_at: str = ""
+    trade_exit_index: int | None = None
+    trade_exit_at: str = ""
+    outcome: EntryOutcome | None = None
+
+
+@dataclass(frozen=True)
 class Signal:
     decision: Decision
     operating_mode: OperatingMode
@@ -104,6 +157,7 @@ class Signal:
     valid_reasons: list[str] = field(default_factory=list)
     rejection_reasons: list[str] = field(default_factory=list)
     research_only: bool = False
+    lifecycle: EntryLifecycle | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -112,6 +166,14 @@ class Signal:
         data["htf_bias"] = self.htf_bias.value
         data["market_regime"] = self.market_regime.value
         data["ml"]["direction"] = self.ml.direction.value
+        if self.lifecycle is not None:
+            lifecycle = data["lifecycle"]
+            lifecycle["state"] = self.lifecycle.state.value
+            lifecycle["state_history"] = [state.value for state in self.lifecycle.state_history]
+            lifecycle["execution_model"] = self.lifecycle.execution_model.value
+            lifecycle["entry_model"] = self.lifecycle.entry_model.value
+            if self.lifecycle.outcome is not None:
+                lifecycle["outcome"] = self.lifecycle.outcome.value
         return data
 
 
@@ -124,8 +186,13 @@ REJECTION_REASONS = {
     "sweep_not_confirmed",
     "no_mss_body_close",
     "no_valid_fvg",
-    "entry_zone_unavailable",
-    "entry_not_filled",
+    "entry_filled",
+    "entry_expired",
+    "entry_not_reached",
+    "setup_invalidated",
+    "structural_break_before_entry",
+    "stop_level_breached_before_entry",
+    "fvg_close_through_before_entry",
     "stop_unavailable",
     "target_unavailable",
     "risk_reward_below_minimum",

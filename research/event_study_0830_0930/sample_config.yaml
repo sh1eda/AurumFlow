@@ -1,0 +1,56 @@
+# Reference configuration. The current CLI uses explicit arguments so every run is visible in shell history.
+market:
+  input: research/event_study_0830_0930/external_data/raw/xauusd_ticks.csv
+  adapter: mt5
+  mode: ticks
+  source_timezone: UTC
+  source: BROKER_OR_VENDOR
+  symbol: XAUUSD
+  canonical_ticks: research/event_study_0830_0930/external_data/normalized/xauusd_ticks.csv
+  canonical_bars: research/event_study_0830_0930/external_data/normalized/xauusd_1m_bidask.csv
+
+calendar:
+  input: research/event_study_0830_0930/external_data/raw/us_releases.csv
+  adapter: generic-csv
+  source_timezone: America/New_York
+  source: CALENDAR_VENDOR
+  canonical_events: research/event_study_0830_0930/external_data/calendar/releases_canonical.csv
+  canonical_clusters: research/event_study_0830_0930/external_data/calendar/event_clusters.csv
+  point_in_time_required_for_surprises: true
+
+validation:
+  maximum_missing_minute_percentage: 1.0
+  maximum_duplicate_timestamps: 0
+  maximum_invalid_spreads: 0
+  maximum_bid_above_ask: 0
+  maximum_invalid_ohlc_rows: 0
+  maximum_weekend_records: 0
+  maximum_closure_records: 0
+  maximum_missing_event_windows: 0
+  large_gap_minutes: 5
+  spread_spike_multiple_of_median: 10.0
+  # Add official holiday/early-close intervals as timezone-aware UTC pairs.
+  known_closure_intervals_utc: []
+
+cost_scenarios:
+  optimistic:
+    additional_slippage_points: 0.00
+    news_window_slippage_points: 0.02
+    stop_order_slippage_points: 0.02
+    maximum_acceptable_spread: 0.30
+    limit_fill_assumption: touch
+  base:
+    additional_slippage_points: 0.03
+    news_window_slippage_points: 0.08
+    stop_order_slippage_points: 0.05
+    maximum_acceptable_spread: 0.50
+    limit_fill_assumption: trade_through
+  stress:
+    additional_slippage_points: 0.10
+    news_window_slippage_points: 0.25
+    stop_order_slippage_points: 0.15
+    maximum_acceptable_spread: 1.00
+    limit_fill_assumption: next_tick
+
+# Empty by design. Supply a separately reviewed JSON mapping before directional-surprise analysis.
+directional_mapping: {}
