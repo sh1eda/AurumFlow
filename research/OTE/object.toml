@@ -1,0 +1,9 @@
+[object]
+id = "OTE"
+title = "Optimal Trade Entry"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 07"
+layer = 7
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Evaluate whether candidate retracement zones contribute independent predictive value."

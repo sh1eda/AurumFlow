@@ -5,7 +5,7 @@ MODE ?= RULE_ONLY
 BARS ?=
 LEDGER ?= state/paper-ledger.jsonl
 
-.PHONY: install install-dev test signal backtest validate paper
+.PHONY: install install-dev test research-objects research-experiments signal backtest validate paper
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -15,6 +15,12 @@ install-dev:
 
 test:
 	$(PYTHON) -m pytest
+
+research-objects:
+	$(PYTHON) -m aurumflow_research list-objects
+
+research-experiments:
+	$(PYTHON) -m aurumflow_research list-experiments
 
 signal:
 	$(PYTHON) -m xauusd_signal signal --csv "$(CSV)" --htf-bias "$(HTF_BIAS)" --mode "$(MODE)" $(if $(BARS),--bars "$(BARS)",)

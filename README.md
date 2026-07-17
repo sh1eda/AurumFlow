@@ -83,6 +83,9 @@ Not implemented today:
 ```text
 .
 ├── xauusd_signal/          # Python package
+├── aurumflow_research/     # Isolated scientific research infrastructure
+├── research/               # Research-object manifests and future experiments
+├── config/research.toml    # Central research configuration
 ├── tests/                  # Pytest suite
 ├── docs/
 │   ├── README.md           # Documentation index
@@ -101,6 +104,27 @@ Not implemented today:
 ```
 
 Local datasets, generated reports, model artifacts, paper ledgers, and raw research-source files should stay out of git unless they are intentionally curated for release.
+
+## Scientific Research Framework
+
+TASK 001 adds an infrastructure-only research platform that is isolated from
+the existing signal package. Research objects and experiments are discovered
+from colocated TOML manifests; data sources are selected through a common
+interface; and every run receives an isolated output directory, structured log,
+resolved configuration, provenance metadata, Markdown report, JSON summary, and
+explicit research status.
+
+The initial catalog directories are lifecycle placeholders. They contain no HTF
+bias, liquidity, delivery-array, SMT, entry, exit, execution, optimization, or
+machine-learning logic.
+
+```bash
+python -m aurumflow_research list-objects
+python -m aurumflow_research list-experiments
+```
+
+See [Research Framework Architecture](docs/RESEARCH_FRAMEWORK.md) for design
+rationale, artifact schemas, and the no-core-change extension workflow.
 
 ## Isolated Event Study
 

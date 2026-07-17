@@ -60,6 +60,7 @@ paper-ledger*.jsonl
 # Generated reports and exports
 reports/
 generated_reports/
+research_outputs/
 exports/
 XAUUSD_Trading_AI_Paper.*
 XAUUSD_Trading_AI_Technical_Whitepaper.*

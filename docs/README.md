@@ -4,6 +4,9 @@ This directory contains implementation notes, market-concept research notes, and
 
 ## Index
 
+- [Master Research Specification](MASTER_RESEARCH_SPECIFICATION.md)
+- [Research Catalog](RESEARCH_CATALOG.md)
+- [Research Framework Architecture](RESEARCH_FRAMEWORK.md)
 - [Implementation Plan](implementation/IMPLEMENTATION_PLAN.md)
 - [Entry Lifecycle Analysis](implementation/ENTRY_LIFECYCLE_ANALYSIS.md)
 - [Rule Funnel Report](implementation/RULE_FUNNEL_REPORT.md)

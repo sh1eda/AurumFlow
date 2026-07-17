@@ -1,0 +1,17 @@
+[experiment]
+id = "new_object_question_v1"
+research_object = "NEW_OBJECT"
+title = "One measurable research question"
+version = "0.1.0"
+entry_point = "research.NEW_OBJECT.experiments.question_v1.experiment:run"
+output_namespace = "question_v1"
+hypothesis = "Does X improve Y?"
+measurable_definition = "Define X and Y without discretionary interpretation."
+required_data = ["State dataset and fields"]
+success_criteria = ["State the preregistered success threshold"]
+failure_criteria = ["State the preregistered failure threshold"]
+validation_method = "State the isolated validation procedure."
+known_limitations = ["State at least one limitation"]
+
+[parameters]
+example_parameter = 1

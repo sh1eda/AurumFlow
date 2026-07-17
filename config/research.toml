@@ -1,0 +1,34 @@
+[project]
+name = "AurumFlow XAUUSD Research"
+root = ".."
+timezone = "UTC"
+random_seed = 1729
+
+[paths]
+data = "data"
+research_objects = "research"
+outputs = "research_outputs"
+
+[logging]
+level = "INFO"
+console = true
+
+[data.sources.local_csv]
+driver = "aurumflow_research.data:CSVMarketDataSource"
+root = "data"
+timestamp_column = "timestamp"
+
+[data.sources.local_csv.read_csv_options]
+low_memory = false
+
+[data.sources.validated_event_study_csv]
+driver = "aurumflow_research.data:CSVMarketDataSource"
+root = "research/event_study_0830_0930/external_data"
+timestamp_column = "timestamp"
+
+[data.sources.validated_event_study_csv.read_csv_options]
+low_memory = false
+
+[experiment_defaults]
+confidence_level = 0.95
+bootstrap_resamples = 10000

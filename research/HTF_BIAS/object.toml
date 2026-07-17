@@ -1,0 +1,9 @@
+[object]
+id = "HTF_BIAS"
+title = "Higher Timeframe Bias"
+version = "0.2.0"
+catalog_reference = "RESEARCH_CATALOG object 01"
+layer = 2
+lifecycle = "statistical_evaluation"
+decision = "not_evaluated"
+objective = "Evaluate whether higher-timeframe context provides measurable predictive value."
