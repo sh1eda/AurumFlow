@@ -47,5 +47,5 @@ xauusd-signal = "xauusd_signal.cli:main"
 include = ["xauusd_signal*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "research/event_study_0830_0930/tests"]
 pythonpath = ["."]
