@@ -1,9 +1,9 @@
 [object]
 id = "LIQUIDITY"
 title = "Liquidity Pools"
-version = "0.1.0"
+version = "0.2.0"
 catalog_reference = "RESEARCH_CATALOG object 02"
 layer = 3
-lifecycle = "candidate_definition"
+lifecycle = "statistical_evaluation"
 decision = "not_evaluated"
 objective = "Evaluate whether interactions with candidate liquidity objectives influence future price behavior."

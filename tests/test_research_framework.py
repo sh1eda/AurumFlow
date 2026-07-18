@@ -115,7 +115,10 @@ def test_catalog_discovers_research_objects_and_registered_experiments() -> None
         "OTE",
         "ENTRY_VALIDATION",
     }
-    assert {item.experiment_id for item in experiments} == {"HTF_BIAS_PHASE1"}
+    assert {item.experiment_id for item in experiments} == {
+        "HTF_BIAS_PHASE1",
+        "LIQUIDITY_PHASE1",
+    }
     assert all(item.decision is ResearchDecision.NOT_EVALUATED for item in objects)
 
 
