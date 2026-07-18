@@ -87,7 +87,17 @@ feature_importance*.csv
 
 # Large datasets and local research sources
 data/local/
-data/
+data/**
+!data/raw/
+!data/raw/dukascopy/
+!data/raw/dukascopy/.gitkeep
+!data/processed/
+!data/processed/dukascopy/
+!data/processed/dukascopy/.gitkeep
+!data/manifests/
+!data/manifests/.gitkeep
+!data/reports/
+!data/reports/.gitkeep
 datasets/
 market_data/
 raw_data/

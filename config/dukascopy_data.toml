@@ -1,0 +1,51 @@
+version = 1
+
+[source]
+id = "dukascopy-public-bi5"
+base_url = "https://datafeed.dukascopy.com/datafeed"
+url_template = "{base_url}/{archive_symbol}/{year:04d}/{month_zero:02d}/{day:02d}/{hour:02d}h_ticks.bi5"
+partition = "hour"
+timezone = "UTC"
+record_format = ">IIIff"
+record_size_bytes = 20
+
+[symbols.XAUUSD]
+archive_symbol = "XAUUSD"
+price_scale = 1000
+
+[paths]
+raw_root = "data/raw/dukascopy"
+processed_root = "data/processed/dukascopy"
+manifests_root = "data/manifests"
+reports_root = "data/reports"
+logs_root = "data/logs/dukascopy"
+
+[download]
+timeout_seconds = 30.0
+max_attempts = 4
+backoff_initial_seconds = 1.0
+backoff_max_seconds = 16.0
+throttle_seconds = 0.25
+max_compressed_bytes = 104857600
+user_agent = "AurumFlow-D001/1.0 (+research data acquisition)"
+
+[partition_rules]
+start_inclusive = true
+end_exclusive = true
+closure_timezone = "UTC"
+# Conservative by design: Saturday is unambiguously closed. Add source-specific
+# Friday/Sunday hours or dates only after auditing the UTC/DST implications.
+full_day_closed_weekdays = [5]
+explicit_closed_dates = []
+closed_utc_hours_by_weekday = {}
+
+[validation]
+max_spread_absolute = 5.0
+large_tick_gap_seconds = 300.0
+
+[canonical]
+format = "parquet"
+compression = "zstd"
+partition_by = "date"
+parquet_version = "2.6"
+row_group_size = 250000
