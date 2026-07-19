@@ -96,7 +96,8 @@ every partition.
 On restart, a `verified` manifest entry is skipped only when its file still exists,
 its SHA-256 still matches, and its payload still validates. A valid final raw file
 left by an interruption before the manifest update is recovered without another
-network request. Invalid existing objects are never accepted as closures.
+network request. Malformed or corrupt non-empty objects are never accepted as
+closures.
 
 Transient network errors, HTTP 408/425/429, and server errors use bounded
 exponential backoff. Permanent HTTP errors do not. A persistent HTTP/2-capable
@@ -142,20 +143,53 @@ data/reports/dukascopy_XAUUSD_download_quality.md
 Every expected hour is classified as exactly one of:
 
 - `verified_data`: file exists, SHA-256 matches, and BI5 validation succeeds.
-- `expected_market_closure`: an explicit configured UTC closure rule matches.
+- `expected_market_closure`: an explicit configured calendar rule matches and the
+  partition also has empty, missing, or explicit no-data evidence.
 - `missing_partition`: no accepted source object is available.
 - `corrupt_partition`: file SHA-256 differs from the manifest.
 - `malformed_payload`: checksum matches but BI5/LZMA validation fails.
 - `unresolved_status`: a failure, unknown status, or unmanifested object needs
   intervention.
 
-The default calendar policy is intentionally conservative: only Saturday (UTC
-weekday `5`) is a full-day closure. Friday/Sunday session hours have seasonal UTC
-and source-specific risk, so they are not guessed. Audited rules may be added using
+### XAUUSD daily trading break
+
+Dukascopy Bank's published [Trading Hours](https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/)
+table specifies an XAU/USD trading break of 21:00–22:00 GMT/UTC during summer
+time and 22:00–23:00 GMT/UTC during winter time. D001 represents both published
+intervals as one 22:00–23:00 local interval using the IANA `Europe/London`
+calendar:
+
+| London calendar state | London local interval | Matching UTC partition |
+|---|---|---|
+| BST (UTC+01:00) | 22:00–23:00 | 21:00–22:00 UTC |
+| GMT (UTC+00:00) | 22:00–23:00 | 22:00–23:00 UTC |
+
+The timezone database, rather than a hard-coded month or list of transition dates,
+therefore determines each year's DST boundaries. The configured local weekdays are
+Monday through Friday (`0` through `4`). The rule is nested under
+`symbol_daily_breaks.XAUUSD`, so it does not change any other instrument. The
+source URL, named calendar, local interval, and weekdays are retained in the TOML
+and copied into every JSON verification report.
+
+The verifier requires two independent conditions before it reports
+`expected_market_closure`:
+
+1. The exact native UTC hour matches the configured rule for the requested symbol.
+2. The raw response is empty, the partition has no payload, or the manifest uses an
+   explicitly enumerated no-data status.
+
+A calendar match does not convert an HTTP or network error into a closure. A
+recorded `empty_payload` is accepted only inside the matching calendar hour. A
+non-empty object is always checksum-checked and BI5-validated first; checksum drift
+remains `corrupt_partition`, and malformed LZMA/BI5 or placeholder content remains
+`malformed_payload`, even during the break.
+
+The other default calendar rule remains Saturday (UTC weekday `5`) as a full-day
+closure. Additional audited rules may be added using
 `full_day_closed_weekdays`, `explicit_closed_dates`, or
-`closed_utc_hours_by_weekday`. The verifier copies the active rules into every JSON
-report. HTTP 404, empty content, HTML placeholders, and network failures never
-establish a market closure by themselves.
+`closed_utc_hours_by_weekday`. An empty response outside a configured closure,
+explicit no-data outside a configured closure, and all arbitrary HTTP/network
+failures remain unresolved.
 
 ## Canonical Build
 
@@ -240,11 +274,11 @@ experiment.
   Coverage is a measured report outcome, not a source claim.
 - XAUUSD scaling and binary-field ordering are explicit source assumptions that
   must be re-audited if Dukascopy changes its format.
-- The conservative default closure calendar can report legitimate closed
-  Friday/Sunday hours as unresolved. This is safer than fabricating a closure;
-  audited DST-aware rules can be configured later.
-- A valid empty/no-tick object is not accepted automatically. It remains unresolved
-  unless an explicit calendar rule establishes a closure.
+- The daily-break rule covers only the source-backed XAUUSD interval. Unconfigured
+  Friday/Sunday session hours and special US-holiday hours can remain unresolved;
+  they are not inferred from this rule.
+- An empty/no-tick object is not accepted automatically. It remains unresolved
+  unless the exact symbol calendar rule also matches.
 - Large builds process one UTC day at a time but still require enough memory for one
   day of decoded ticks.
 - Quality thresholds flag observations; they do not repair, remove, or impute them.

@@ -19,10 +19,11 @@ import struct
 import tempfile
 import tomllib
 from typing import Any, Iterable, Iterator, Mapping
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 UTC = timezone.utc
-CODE_VERSION = "D001-1"
+CODE_VERSION = "D001-2"
 MANIFEST_SCHEMA_VERSION = 1
 TICK_STRUCT = struct.Struct(">IIIff")
 
@@ -140,6 +141,44 @@ def load_config(path: str | Path) -> PipelineConfig:
     for name, symbol in symbols.items():
         if symbol.price_scale <= 0:
             raise ConfigurationError(f"{name} price_scale must be positive")
+    partition_rules = payload["partition_rules"]
+    if partition_rules.get("closure_timezone", "UTC") != "UTC":
+        raise ConfigurationError("legacy closure rules must use UTC")
+    daily_breaks = partition_rules.get("symbol_daily_breaks", {})
+    if not isinstance(daily_breaks, Mapping):
+        raise ConfigurationError("symbol_daily_breaks must be a table")
+    for configured_name, rule in daily_breaks.items():
+        name = configured_name.upper()
+        if name not in symbols:
+            raise ConfigurationError(
+                f"daily-break rule references unsupported symbol {configured_name!r}"
+            )
+        if not isinstance(rule, Mapping):
+            raise ConfigurationError(f"{name} daily-break rule must be a table")
+        calendar_timezone = str(rule.get("calendar_timezone", ""))
+        try:
+            ZoneInfo(calendar_timezone)
+        except (ValueError, ZoneInfoNotFoundError) as exc:
+            raise ConfigurationError(
+                f"{name} daily-break calendar_timezone is invalid: {calendar_timezone!r}"
+            ) from exc
+        start_minute = _parse_local_time(
+            rule.get("local_start"), field=f"{name}.local_start"
+        )
+        end_minute = _parse_local_time(
+            rule.get("local_end"), field=f"{name}.local_end"
+        )
+        if (end_minute - start_minute) % (24 * 60) != 60:
+            raise ConfigurationError(
+                f"{name} daily break must span exactly one native hourly partition"
+            )
+        weekdays = [int(day) for day in rule.get("local_weekdays", [])]
+        if not weekdays or any(day < 0 or day > 6 for day in weekdays):
+            raise ConfigurationError(
+                f"{name}.local_weekdays must contain ISO weekday integers 0 through 6"
+            )
+        if not str(rule.get("source_url", "")).startswith("https://"):
+            raise ConfigurationError(f"{name} daily-break rule requires an HTTPS source_url")
     return PipelineConfig(
         path=config_path,
         repository_root=config_path.parent.parent,
@@ -148,7 +187,7 @@ def load_config(path: str | Path) -> PipelineConfig:
         symbols=symbols,
         paths={key: Path(value) for key, value in payload["paths"].items()},
         download=payload["download"],
-        partition_rules=payload["partition_rules"],
+        partition_rules=partition_rules,
         validation=payload["validation"],
         canonical=payload["canonical"],
     )
@@ -223,21 +262,113 @@ def partition_file_path(
     )
 
 
-def is_expected_closure(config: PipelineConfig, partition: Partition) -> bool:
-    """Apply only explicit, auditable UTC calendar rules from configuration."""
+def _parse_local_time(value: Any, *, field: str) -> int:
+    try:
+        hour_text, minute_text = str(value).split(":", maxsplit=1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(f"{field} must use HH:MM") from exc
+    if not 0 <= hour <= 23 or not 0 <= minute <= 59:
+        raise ConfigurationError(f"{field} must be a valid local wall-clock time")
+    return hour * 60 + minute
+
+
+def expected_closure_rule(
+    config: PipelineConfig,
+    partition: Partition,
+    *,
+    symbol: str | None = None,
+) -> dict[str, Any] | None:
+    """Return the exact configured calendar rule matching a native UTC hour."""
 
     rules = config.partition_rules
     if rules.get("closure_timezone", "UTC") != "UTC":
-        raise ConfigurationError("only UTC closure rules are supported")
+        raise ConfigurationError("legacy closure rules must use UTC")
     timestamp = partition.timestamp
     if timestamp.weekday() in {int(day) for day in rules.get("full_day_closed_weekdays", [])}:
-        return True
+        return {
+            "rule_id": f"utc_full_day_weekday_{timestamp.weekday()}",
+            "rule_type": "full_day_closed_weekday",
+            "calendar_timezone": "UTC",
+        }
     if timestamp.date().isoformat() in set(rules.get("explicit_closed_dates", [])):
-        return True
+        return {
+            "rule_id": f"utc_closed_date_{timestamp.date().isoformat()}",
+            "rule_type": "explicit_closed_date",
+            "calendar_timezone": "UTC",
+        }
     closed_hours = rules.get("closed_utc_hours_by_weekday", {})
-    return timestamp.hour in {
+    if timestamp.hour in {
         int(hour) for hour in closed_hours.get(str(timestamp.weekday()), [])
-    }
+    }:
+        return {
+            "rule_id": f"utc_weekday_{timestamp.weekday()}_hour_{timestamp.hour:02d}",
+            "rule_type": "closed_utc_hour_by_weekday",
+            "calendar_timezone": "UTC",
+        }
+
+    if symbol is None:
+        return None
+    normalized_symbol = symbol.upper()
+    daily_breaks = rules.get("symbol_daily_breaks", {})
+    rule = daily_breaks.get(normalized_symbol)
+    if not isinstance(rule, Mapping):
+        return None
+    calendar_timezone = str(rule["calendar_timezone"])
+    calendar = ZoneInfo(calendar_timezone)
+    local_start = timestamp.astimezone(calendar)
+    local_end = (timestamp + timedelta(hours=1)).astimezone(calendar)
+    configured_start = _parse_local_time(
+        rule["local_start"], field=f"{normalized_symbol}.local_start"
+    )
+    configured_end = _parse_local_time(
+        rule["local_end"], field=f"{normalized_symbol}.local_end"
+    )
+    actual_start = local_start.hour * 60 + local_start.minute
+    actual_end = local_end.hour * 60 + local_end.minute
+    local_weekdays = {int(day) for day in rule["local_weekdays"]}
+    if (
+        local_start.weekday() in local_weekdays
+        and actual_start == configured_start
+        and actual_end == configured_end
+    ):
+        return {
+            "rule_id": f"{normalized_symbol}_daily_break",
+            "rule_type": "symbol_daily_break",
+            "symbol": normalized_symbol,
+            "calendar_timezone": calendar_timezone,
+            "local_interval": f"{rule['local_start']}-{rule['local_end']}",
+            "local_weekday": local_start.weekday(),
+            "utc_offset_seconds": int(local_start.utcoffset().total_seconds()),
+            "source_url": str(rule["source_url"]),
+        }
+    return None
+
+
+def is_expected_closure(
+    config: PipelineConfig,
+    partition: Partition,
+    *,
+    symbol: str | None = None,
+) -> bool:
+    """Return whether an explicit calendar rule matches this exact partition."""
+
+    return expected_closure_rule(config, partition, symbol=symbol) is not None
+
+
+def manifest_no_data_evidence(entry: Mapping[str, Any] | None) -> str | None:
+    """Return narrowly enumerated no-data evidence; never infer it from HTTP errors."""
+
+    if entry is None:
+        return "missing_manifest_and_payload"
+    status = str(entry.get("status", "")).strip().lower()
+    if status in {"missing", "no_data", "no-data", "expected_market_closure"}:
+        return f"manifest_status:{status}"
+    error_details = str(entry.get("error_details") or "").strip().lower()
+    if status == "failed" and error_details.startswith("empty_payload:"):
+        return "empty_payload"
+    return None
 
 
 def sha256_bytes(payload: bytes) -> str:

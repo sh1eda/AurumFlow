@@ -33,11 +33,22 @@ user_agent = "AurumFlow-D001/1.0 (+research data acquisition)"
 start_inclusive = true
 end_exclusive = true
 closure_timezone = "UTC"
-# Conservative by design: Saturday is unambiguously closed. Add source-specific
-# Friday/Sunday hours or dates only after auditing the UTC/DST implications.
+# Saturday is an explicit full-day UTC closure. Symbol-specific breaks below use
+# their own named civil-time calendar and do not apply to other instruments.
 full_day_closed_weekdays = [5]
 explicit_closed_dates = []
 closed_utc_hours_by_weekday = {}
+
+[partition_rules.symbol_daily_breaks.XAUUSD]
+# Dukascopy publishes 21:00-22:00 UTC in summer and 22:00-23:00 UTC in winter.
+# Expressing that as 22:00-23:00 Europe/London delegates transition dates to the
+# IANA timezone database instead of hard-coding seasonal UTC dates.
+calendar_timezone = "Europe/London"
+local_start = "22:00"
+local_end = "23:00"
+local_weekdays = [0, 1, 2, 3, 4]
+source_url = "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/"
+source_description = "Dukascopy XAU/USD trading breaks: summer 21:00-22:00 UTC; winter 22:00-23:00 UTC"
 
 [validation]
 max_spread_absolute = 5.0

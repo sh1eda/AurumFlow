@@ -28,6 +28,7 @@ try:
         inspect_bi5_payload,
         is_expected_closure,
         load_config,
+        manifest_no_data_evidence,
         parse_utc_boundary,
         partition_file_path,
         partition_url,
@@ -52,6 +53,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution fallba
         inspect_bi5_payload,
         is_expected_closure,
         load_config,
+        manifest_no_data_evidence,
         parse_utc_boundary,
         partition_file_path,
         partition_url,
@@ -278,9 +280,9 @@ def _count_unresolved(
     unresolved = 0
     for partition in partitions:
         entry = manifest.get(partition)
-        if is_expected_closure(config, partition) and (
-            entry is None or entry.get("status") == "expected_market_closure"
-        ):
+        if is_expected_closure(
+            config, partition, symbol=manifest.symbol
+        ) and manifest_no_data_evidence(entry) is not None:
             continue
         valid, _error = _entry_is_verified(entry, config=config)
         if not valid:
@@ -402,7 +404,11 @@ def download_range(
                     )
                     continue
 
-            if is_expected_closure(config, partition):
+            if (
+                is_expected_closure(config, partition, symbol=symbol)
+                and manifest_no_data_evidence(entry) is not None
+                and not path.is_file()
+            ):
                 summary["expected_market_closures"] += 1
                 if not dry_run:
                     manifest.record(
@@ -417,7 +423,10 @@ def download_range(
                             checksum=None,
                             status="expected_market_closure",
                             retry_count=0,
-                            error_details="matched explicit configured UTC closure rule",
+                            error_details=(
+                                "matched configured closure rule with missing or explicit "
+                                "no-data evidence"
+                            ),
                             download_timestamp=None,
                         ),
                     )

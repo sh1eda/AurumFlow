@@ -113,6 +113,42 @@ def test_weekend_handling_uses_only_configured_calendar_rules(config):
     assert is_expected_closure(config, sunday) is False
 
 
+def test_xauusd_daily_break_matches_only_winter_hour(config):
+    winter_break = Partition(datetime(2025, 1, 7, 22, tzinfo=UTC))
+    winter_hour_before = Partition(datetime(2025, 1, 7, 21, tzinfo=UTC))
+    assert is_expected_closure(config, winter_break, symbol="XAUUSD") is True
+    assert is_expected_closure(config, winter_hour_before, symbol="XAUUSD") is False
+
+
+def test_xauusd_daily_break_matches_only_summer_hour(config):
+    summer_break = Partition(datetime(2025, 7, 8, 21, tzinfo=UTC))
+    summer_hour_after = Partition(datetime(2025, 7, 8, 22, tzinfo=UTC))
+    assert is_expected_closure(config, summer_break, symbol="XAUUSD") is True
+    assert is_expected_closure(config, summer_hour_after, symbol="XAUUSD") is False
+
+
+@pytest.mark.parametrize(
+    ("timestamp", "expected"),
+    [
+        (datetime(2025, 3, 28, 22, tzinfo=UTC), True),  # Friday before BST
+        (datetime(2025, 3, 31, 21, tzinfo=UTC), True),  # Monday after BST
+        (datetime(2025, 3, 31, 22, tzinfo=UTC), False),
+        (datetime(2025, 10, 24, 21, tzinfo=UTC), True),  # Friday before GMT
+        (datetime(2025, 10, 27, 22, tzinfo=UTC), True),  # Monday after GMT
+        (datetime(2025, 10, 27, 21, tzinfo=UTC), False),
+    ],
+)
+def test_xauusd_daily_break_follows_london_dst_boundaries(config, timestamp, expected):
+    assert is_expected_closure(
+        config, Partition(timestamp), symbol="XAUUSD"
+    ) is expected
+
+
+def test_xauusd_daily_break_rule_does_not_apply_to_other_symbols(config):
+    winter_break = Partition(datetime(2025, 1, 7, 22, tzinfo=UTC))
+    assert is_expected_closure(config, winter_break, symbol="EURUSD") is False
+
+
 def test_payload_validation_rejects_empty_malformed_and_placeholder(config):
     limit = config.download["max_compressed_bytes"]
     with pytest.raises(EmptyPayloadError):
@@ -375,6 +411,84 @@ def test_verifier_detects_checksum_valid_but_malformed_payload(tmp_path, config)
         partition=partition,
     )
     assert result["classification"] == "malformed_payload"
+
+
+def test_malformed_non_empty_payload_during_daily_break_remains_malformed(
+    tmp_path, config
+):
+    partition = Partition(datetime(2025, 1, 7, 22, tzinfo=UTC))
+    raw_root = tmp_path / "raw"
+    raw_file = partition_file_path(raw_root, "XAUUSD", partition)
+    malformed = lzma.compress(b"not-a-20-byte-record", format=lzma.FORMAT_ALONE)
+    atomic_write_bytes(raw_file, malformed)
+    path = manifest_path(tmp_path)
+    manifest = Manifest(path, config=config, symbol="XAUUSD")
+    manifest.record(
+        partition,
+        file_path=str(raw_file),
+        byte_size=len(malformed),
+        sha256=hashlib.sha256(malformed).hexdigest(),
+        status="verified",
+        error_details=None,
+    )
+    manifest.save()
+    result = classify_partition(
+        config=config,
+        manifest=manifest,
+        raw_root=raw_root,
+        symbol="XAUUSD",
+        partition=partition,
+    )
+    assert result["closure_rule_matched"] is True
+    assert result["classification"] == "malformed_payload"
+
+
+def test_daily_break_requires_no_data_evidence_not_http_failure(tmp_path, config):
+    partition = Partition(datetime(2025, 1, 7, 22, tzinfo=UTC))
+    path = manifest_path(tmp_path)
+    manifest = Manifest(path, config=config, symbol="XAUUSD")
+    manifest.record(
+        partition,
+        file_path=None,
+        byte_size=None,
+        sha256=None,
+        status="failed",
+        error_details="SourceRequestError: HTTP 500",
+    )
+    manifest.save()
+    result = classify_partition(
+        config=config,
+        manifest=manifest,
+        raw_root=tmp_path / "raw",
+        symbol="XAUUSD",
+        partition=partition,
+    )
+    assert result["closure_rule_matched"] is True
+    assert result["classification"] == "unresolved_status"
+
+
+def test_daily_break_accepts_recorded_empty_payload(tmp_path, config):
+    partition = Partition(datetime(2025, 1, 7, 22, tzinfo=UTC))
+    path = manifest_path(tmp_path)
+    manifest = Manifest(path, config=config, symbol="XAUUSD")
+    manifest.record(
+        partition,
+        file_path=None,
+        byte_size=None,
+        sha256=None,
+        status="failed",
+        error_details="empty_payload: compressed response is empty",
+    )
+    manifest.save()
+    result = classify_partition(
+        config=config,
+        manifest=manifest,
+        raw_root=tmp_path / "raw",
+        symbol="XAUUSD",
+        partition=partition,
+    )
+    assert result["classification"] == "expected_market_closure"
+    assert result["closure_evidence"] == "empty_payload"
 
 
 def test_verifier_distinguishes_closure_missing_and_unresolved(tmp_path, config):

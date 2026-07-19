@@ -19,11 +19,12 @@ try:
         PlaceholderPayloadError,
         atomic_write_bytes,
         atomic_write_json,
+        expected_closure_rule,
         format_utc,
         generate_partitions,
-        is_expected_closure,
         load_config,
         manifest_file_hash,
+        manifest_no_data_evidence,
         parse_utc_boundary,
         partition_file_path,
         resolve_manifest_file_path,
@@ -41,11 +42,12 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution fallba
         PlaceholderPayloadError,
         atomic_write_bytes,
         atomic_write_json,
+        expected_closure_rule,
         format_utc,
         generate_partitions,
-        is_expected_closure,
         load_config,
         manifest_file_hash,
+        manifest_no_data_evidence,
         parse_utc_boundary,
         partition_file_path,
         resolve_manifest_file_path,
@@ -79,7 +81,8 @@ def classify_partition(
         (entry or {}).get("file_path"), repository_root=config.repository_root
     )
     candidate = manifest_path or expected_path
-    closure = is_expected_closure(config, partition)
+    closure_rule = expected_closure_rule(config, partition, symbol=symbol)
+    closure_evidence = manifest_no_data_evidence(entry)
 
     result: dict[str, Any] = {
         "partition_timestamp": partition.key,
@@ -90,22 +93,18 @@ def classify_partition(
         "computed_sha256": None,
         "byte_size": None,
         "record_count": None,
-        "closure_rule_matched": closure,
+        "closure_rule_matched": closure_rule is not None,
+        "closure_rule": closure_rule,
+        "closure_evidence": None,
         "details": None,
     }
 
-    # Available verified data wins over a closure rule, exposing rule conflicts.
-    if entry and entry.get("status") == "verified":
-        if not candidate.is_file():
-            result.update(
-                classification="missing_partition",
-                details="manifest says verified but the raw file is unavailable",
-            )
-            return result
+    if candidate.is_file():
         result["byte_size"] = candidate.stat().st_size
         checksum = sha256_file(candidate)
         result["computed_sha256"] = checksum
-        if checksum != entry.get("sha256"):
+        manifest_checksum = (entry or {}).get("sha256")
+        if manifest_checksum is not None and checksum != manifest_checksum:
             result.update(
                 classification="corrupt_partition",
                 details="computed SHA-256 does not match the manifest",
@@ -116,68 +115,91 @@ def classify_partition(
                 candidate,
                 max_compressed_bytes=int(config.download["max_compressed_bytes"]),
             )
-        except (EmptyPayloadError, MalformedPayloadError, PlaceholderPayloadError) as exc:
+        except EmptyPayloadError as exc:
+            if closure_rule is not None:
+                result.update(
+                    classification="expected_market_closure",
+                    closure_evidence="empty_payload",
+                    details=(
+                        f"{closure_rule['rule_id']} matched and the raw payload is empty"
+                    ),
+                )
+            else:
+                result.update(
+                    classification="malformed_payload",
+                    details=f"{type(exc).__name__}: {exc}",
+                )
+            return result
+        except (MalformedPayloadError, PlaceholderPayloadError) as exc:
             result.update(
                 classification="malformed_payload",
                 details=f"{type(exc).__name__}: {exc}",
             )
             return result
+        if entry and entry.get("status") == "verified":
+            result.update(
+                classification="verified_data",
+                record_count=rows,
+                details=(
+                    "verified data conflicts with a configured closure rule"
+                    if closure_rule is not None
+                    else "checksum and BI5 payload verified"
+                ),
+            )
+            return result
         result.update(
-            classification="verified_data",
+            classification="unresolved_status",
             record_count=rows,
             details=(
-                "verified data conflicts with a configured closure rule"
-                if closure
-                else "checksum and BI5 payload verified"
+                "valid raw file is not accepted; manifest status is "
+                f"{(entry or {}).get('status')!r}"
             ),
         )
         return result
 
-    if closure:
-        if candidate.is_file():
-            result.update(
-                classification="unresolved_status",
-                byte_size=candidate.stat().st_size,
-                details="configured closure has an unverified raw file",
-            )
-        else:
-            result.update(
-                classification="expected_market_closure",
-                details="matched explicit configured UTC closure rule",
-            )
+    if entry and entry.get("status") == "verified":
+        result.update(
+            classification="missing_partition",
+            details="manifest says verified but the raw file is unavailable",
+        )
+        return result
+
+    if closure_rule is not None and closure_evidence is not None:
+        result.update(
+            classification="expected_market_closure",
+            closure_evidence=closure_evidence,
+            details=(
+                f"{closure_rule['rule_id']} matched with no-data evidence "
+                f"{closure_evidence}"
+            ),
+        )
         return result
 
     if entry is None:
-        if expected_path.is_file():
-            result.update(
-                classification="unresolved_status",
-                byte_size=expected_path.stat().st_size,
-                details="raw file exists without a manifest record",
-            )
-        else:
-            result.update(
-                classification="missing_partition",
-                details="no manifest record or raw file",
-            )
+        result.update(
+            classification="missing_partition",
+            details="no manifest record or raw file",
+        )
         return result
 
-    if not candidate.is_file():
-        if entry.get("status") in {"failed", "unresolved", "malformed_payload", "corrupt"}:
-            result.update(
-                classification="unresolved_status",
-                details=entry.get("error_details") or f"manifest status is {entry.get('status')}",
-            )
-        else:
-            result.update(
-                classification="missing_partition",
-                details=f"manifest status {entry.get('status')!r} has no raw file",
-            )
+    if entry.get("status") in {
+        "failed",
+        "unresolved",
+        "malformed_payload",
+        "corrupt",
+        "no_data",
+        "no-data",
+        "expected_market_closure",
+    }:
+        result.update(
+            classification="unresolved_status",
+            details=entry.get("error_details") or f"manifest status is {entry.get('status')}",
+        )
         return result
 
     result.update(
-        classification="unresolved_status",
-        byte_size=candidate.stat().st_size,
-        details=f"raw file is not accepted; manifest status is {entry.get('status')!r}",
+        classification="missing_partition",
+        details=f"manifest status {entry.get('status')!r} has no raw file",
     )
     return result
 
@@ -244,6 +266,9 @@ def verify_range(
             "closed_utc_hours_by_weekday": config.partition_rules.get(
                 "closed_utc_hours_by_weekday", {}
             ),
+            "symbol_daily_breaks": config.partition_rules.get(
+                "symbol_daily_breaks", {}
+            ),
         },
         "counts": {**counts, "expected_partitions": len(partitions), "unresolved": unresolved},
         "partitions": details,
@@ -272,8 +297,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         [
             f"| **unresolved total** | **{counts['unresolved']}** |",
             "",
-            "A market closure is reported only when an explicit UTC calendar rule in the "
-            "versioned configuration matches. HTTP failures never establish a closure.",
+            "A market closure is reported only when an explicit versioned calendar rule "
+            "matches and the payload is empty, missing, or explicitly no-data. HTTP "
+            "failures never establish a closure.",
             "",
             "## Non-verified Partitions",
             "",
