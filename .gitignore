@@ -108,6 +108,7 @@ docs/raw_sources/
 *.arrow
 *.h5
 *.hdf5
+proxies.txt
 
 # Model artifacts
 models/

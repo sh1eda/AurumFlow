@@ -1,0 +1,437 @@
+{
+  "calendar_schema_version": 1,
+  "calendar_id": "D002-XAUUSD-2021-2026",
+  "symbol": "XAUUSD",
+  "range": {
+    "start_inclusive": "2021-01-01T00:00:00Z",
+    "end_exclusive": "2026-01-01T00:00:00Z"
+  },
+  "classification_policy": {
+    "candidate_evidence_required": {
+      "evidence_kind": "confirmed_empty_payload",
+      "http_status": 200,
+      "response_byte_length": 0
+    },
+    "accepted_confidence_levels": [
+      "high",
+      "medium"
+    ],
+    "unmatched_classification": "unexplained_empty_payload",
+    "notes": "Rules apply only to the 757 D002 candidates. They do not override verified BI5 data or the D001 regular-closure calendar."
+  },
+  "sources": {
+    "dukascopy_general_features": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "General Features — Trading Hours",
+      "publication_date": "continuously maintained; accessed 2026-07-24",
+      "url": "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/",
+      "applicable_timezone": "GMT/UTC",
+      "support": "XAU/USD daily break is 21:00-22:00 GMT in summer and 22:00-23:00 GMT in winter; XAU/USD is not tradable 17:00-21:00 GMT in summer and 18:00-22:00 GMT in winter on US national holidays."
+    },
+    "dukascopy_trading_breaks_calendar": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Trading Breaks Calendar",
+      "publication_date": "continuously maintained; accessed 2026-07-24",
+      "url": "https://www.dukascopy.com/swiss/english/marketwatch/trading-breaks-calendar/",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Dukascopy states that this calendar publishes special trading hours in GMT due to holidays."
+    },
+    "dukascopy_holiday_exact_2013": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Holiday trading hours schedule",
+      "publication_date": "2013-12-09",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/holiday-trading-hours-schedule-dbl199995/",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Publishes exact Gold/Silver Christmas hours (24 December 18:30 close through 25 December 23:00 reopen) and New Year hours (31 December 22:00 close through 1 January 23:00 reopen)."
+    },
+    "dukascopy_thanksgiving_exact_2017": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "US Thanksgiving holiday Trading hours",
+      "publication_date": "2017-11-22",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/us-thanksgiving-holiday-trading-hours-dbl200902/",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Publishes exact Gold/Silver Thanksgiving hours: Thursday 18:00 close and 23:00 reopen, followed by Friday 18:45 close through the Sunday 23:00 reopen."
+    },
+    "dukascopy_labor_exact_2013": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "September 2nd — US Labor Day holiday",
+      "publication_date": "2013-08-30",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/september-2nd-ndash-us-labor-day-holiday",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Publishes the exact 17:00-22:00 GMT Gold/Silver Labor Day break."
+    },
+    "dukascopy_mlk_exact_2016": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Martin Luther King day",
+      "publication_date": "2016-01-15",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/martin-luther-king-day",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Publishes the exact 18:00-23:00 GMT Gold/Silver Martin Luther King Jr. Day break."
+    },
+    "dukascopy_xau_launch_2011": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Gold (XAU/USD) launched for live trading accounts",
+      "publication_date": "2011-04-08",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/-dbl194921",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Published XAU/USD summer hours begin Sunday at 22:00 GMT, one hour after the general market open, with the 21:00-22:00 settlement break."
+    },
+    "dukascopy_dst_start_2021": {
+      "publisher": "Dukascopy Europe IBS AS",
+      "title": "Change to Daylight Saving Time 2021 in US",
+      "publication_date": "2021-03-10",
+      "url": "https://www.dukascopy.com/europe/english/about/ournews/change-to-daylight-saving-time-2021-in-us",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed from 22:00 to 21:00 GMT on 2021-03-14; XAU/USD is listed."
+    },
+    "dukascopy_dst_start_2022": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Change to Daylight Saving Time 2022 in US",
+      "publication_date": "2022-03-10",
+      "url": "https://www.dukascopy.com/swiss/it/about/ournews/change-to-daylight-saving-time-2022-in-us",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed from 22:00 to 21:00 GMT on the US DST transition; XAU/USD is listed."
+    },
+    "dukascopy_dst_start_2023": {
+      "publisher": "Dukascopy Europe IBS AS",
+      "title": "Change to Daylight Saving Time 2023 in the US",
+      "publication_date": "2023-03-10",
+      "url": "https://www.dukascopy.com/europe/hu/about/ournews/change-to-daylight-saving-time-2023-in-the-us",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed from 22:00 to 21:00 GMT on 2023-03-12; XAU/USD is listed."
+    },
+    "dukascopy_dst_start_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight saving time 2024 in the US",
+      "publication_date": "2024-03-05",
+      "url": "https://www.dukascopy.com/swiss/it/about/ournews/daylight-saving-time-2024-in-the-us",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed from 22:00 to 21:00 GMT on 2024-03-10; XAU/USD is listed."
+    },
+    "dukascopy_dst_start_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight saving time 2025 in the US",
+      "publication_date": "2025-03-05",
+      "url": "https://www.dukascopy.com/swiss/french/about/ournews/daylight-saving-time-2025-in-the-us",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed from 22:00 to 21:00 GMT on 2025-03-09; XAU/USD is listed."
+    },
+    "dukascopy_dst_end_rule": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight savings time ends",
+      "publication_date": "2017-10-26",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/daylight-savings-time-ends-dbl200887/",
+      "applicable_timezone": "America/New_York, Europe/London and GMT/UTC",
+      "support": "Dukascopy explicitly distinguishes the earlier EU clock change from the later North American change and keeps opening/settlement at 21:00 GMT until US DST ends."
+    },
+    "dukascopy_dst_end_2022": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight savings time ends in US",
+      "publication_date": "2022-11-04",
+      "url": "https://www.dukascopy.com/swiss/english/full-news/daylight-savings-time-ends-in-us-dbl202475/",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed to 22:00 GMT on 2022-11-06."
+    },
+    "dukascopy_dst_end_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight savings time ends in US",
+      "publication_date": "2024-11-01",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/daylight-savings-time-ends-in-us-dbl202961",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed to 22:00 GMT on 2024-11-03."
+    },
+    "dukascopy_dst_end_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Daylight savings time ends in US",
+      "publication_date": "2025-11-03",
+      "url": "https://www.dukascopy.com/swiss/pl/about/ournews/daylight-savings-time-ends-in-us-dbl203230",
+      "applicable_timezone": "America/New_York and GMT/UTC",
+      "support": "Market opening and settlement changed to 22:00 GMT on 2025-11-02."
+    },
+    "dukascopy_easter_exact_2015": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Easter Holiday News",
+      "publication_date": "2015-04-02",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/easter-holiday-news",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Gold and silver stop after Thursday settlement, remain closed on Good Friday, and resume Sunday after the XAU opening break."
+    },
+    "dukascopy_easter_2021": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Easter weekend market closures 2021",
+      "publication_date": "2021-03-31",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/easter-weekend-market-closures-2021",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces market closures on Good Friday, 2021-04-02."
+    },
+    "dukascopy_easter_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Easter weekend market closures 2024",
+      "publication_date": "2024-03-26",
+      "url": "https://www.dukascopy.com/swiss/pt/about/ournews/easter-weekend-market-closures-2024",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces market closures on Good Friday, 2024-03-29."
+    },
+    "dukascopy_easter_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Easter weekend market closures 2025",
+      "publication_date": "2025-04-16",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/easter-weekend-market-closures-2025",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces market closures on Good Friday, 2025-04-18."
+    },
+    "us_opm_federal_holidays": {
+      "publisher": "United States Office of Personnel Management",
+      "title": "Federal Holidays",
+      "publication_date": "annual schedules; accessed 2026-07-24",
+      "url": "https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/",
+      "applicable_timezone": "United States local civil dates",
+      "support": "Authoritative US federal-holiday dates and observed-day convention."
+    },
+    "dukascopy_memorial_2021": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Memorial Day",
+      "publication_date": "2021-05-28",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-memorial-day-dbl202104",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces Bullion trading breaks on 2021-05-31."
+    },
+    "dukascopy_memorial_exact": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Memorial Day holiday Monday 28 May",
+      "publication_date": "2018-05-25",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/memorial-day-holiday-monday-28-may",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Publishes the exact 17:00-22:00 GMT gold and silver break."
+    },
+    "dukascopy_memorial_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Monday 27 May",
+      "publication_date": "2024-05-23",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-monday-27-may",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces Bullion trading breaks for the 2024 Memorial Day."
+    },
+    "dukascopy_memorial_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Monday 26 May",
+      "publication_date": "2025-05-23",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-monday-26-may",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces Bullion trading breaks for the 2025 Memorial Day."
+    },
+    "dukascopy_independence_2022": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Independence Day in the US",
+      "publication_date": "2022-07-01",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-independence-day-in-the-us-dbl202410/",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special Bullion breaks on 2022-07-04."
+    },
+    "dukascopy_independence_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Independence Day in the US",
+      "publication_date": "2025-07-02",
+      "url": "https://www.dukascopy.com/swiss/chinese/about/ournews/market-closures-on-independence-day-in-the-us-dbl203154",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special Bullion breaks on 2025-07-04."
+    },
+    "dukascopy_labor_2024": {
+      "publisher": "Dukascopy Europe IBS AS",
+      "title": "Market closures on Labor Day in the United States",
+      "publication_date": "2024-08-29",
+      "url": "https://www.dukascopy.com/europe/cz/about/ournews/market-closures-on-labor-day-in-the-united-states-dbl202910",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special Bullion breaks on 2024-09-02."
+    },
+    "dukascopy_juneteenth_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Juneteenth National Independence Day",
+      "publication_date": "2024-06-17",
+      "url": "https://www.dukascopy.com/swiss/chinese/about/ournews/juneteenth-national-independence-day-dbl202861",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special market closures on 2024-06-19."
+    },
+    "dukascopy_juneteenth_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Juneteenth National Independence Day",
+      "publication_date": "2025-06-17",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/juneteenth-national-independence-day-dbl203146",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special market closures on 2025-06-19."
+    },
+    "dukascopy_presidents_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on President's Day in the USA",
+      "publication_date": "2025-02-13",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-president-s-day-in-the-usa-dbl203069",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special Bullion breaks on 2025-02-17."
+    },
+    "dukascopy_mlk_notice": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Martin Luther King Jr. Day",
+      "publication_date": "2019-01-17",
+      "url": "https://www.dukascopy.com/swiss/pl/about/ournews/market-closures-on-martin-luther-king-jr-day",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Establishes the recurring special Bullion break on Martin Luther King Jr. Day."
+    },
+    "dukascopy_thanksgiving_2023": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Thanksgiving Day in the US",
+      "publication_date": "2023-11-20",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/thanksgiving-day-in-the-us-dbl202684",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special closures on both Thanksgiving Thursday and Friday."
+    },
+    "dukascopy_thanksgiving_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Thanksgiving Day in the US",
+      "publication_date": "2025-11-18",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/thanksgiving-day-in-the-us-dbl203236",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces special closures on both Thanksgiving Thursday and Friday."
+    },
+    "dukascopy_christmas_2022": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures during X-mas and New Year",
+      "publication_date": "2022-12-09",
+      "url": "https://www.dukascopy.com/swiss/arabic/about/ournews/market-closures-during-x-mas-and-new-year",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces Christmas and New Year market closures."
+    },
+    "dukascopy_christmas_2023": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures on Christmas and New Year",
+      "publication_date": "2023-12-22",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-on-christmas-and-new-year-dbl202761",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces FX and Bullion closures, particularly on 25 December."
+    },
+    "dukascopy_christmas_2024": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures during X-mas and New Year",
+      "publication_date": "2024-12-20",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-during-x-mas-and-new-year-dbl203022",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces FX and Bullion closures, particularly on 25 December."
+    },
+    "dukascopy_christmas_2025": {
+      "publisher": "Dukascopy Bank SA",
+      "title": "Market closures during X-mas and New Year",
+      "publication_date": "2025-12-19",
+      "url": "https://www.dukascopy.com/swiss/english/about/ournews/market-closures-during-x-mas-and-new-year-dbl203256",
+      "applicable_timezone": "GMT/UTC",
+      "support": "Announces FX and Bullion closures during Christmas and New Year."
+    }
+  },
+  "recurring_special_hours_rules": [
+    {
+      "rule_id": "xau_sunday_opening_break",
+      "closure_type": "expected_special_hours_closure",
+      "event": "XAU/USD Sunday opening follows its settlement break",
+      "timezone": "America/New_York",
+      "local_weekdays": [
+        6
+      ],
+      "local_start": "17:00",
+      "local_end": "18:00",
+      "confidence": "high",
+      "source_ids": [
+        "dukascopy_general_features",
+        "dukascopy_xau_launch_2011"
+      ]
+    },
+    {
+      "rule_id": "xau_us_dst_settlement_shift",
+      "closure_type": "expected_special_hours_closure",
+      "event": "US-DST XAU/USD daily settlement hour outside the Europe/London D001 hour",
+      "timezone": "America/New_York",
+      "local_weekdays": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "local_start": "17:00",
+      "local_end": "18:00",
+      "only_when_europe_london_offset_differs": true,
+      "confidence": "high",
+      "source_ids": [
+        "dukascopy_general_features",
+        "dukascopy_dst_start_2021",
+        "dukascopy_dst_start_2022",
+        "dukascopy_dst_start_2023",
+        "dukascopy_dst_start_2024",
+        "dukascopy_dst_start_2025",
+        "dukascopy_dst_end_rule",
+        "dukascopy_dst_end_2022",
+        "dukascopy_dst_end_2024",
+        "dukascopy_dst_end_2025"
+      ]
+    }
+  ],
+  "event_intervals": [
+    ["new_year_2021", "New Year's Day", "expected_holiday_closure", "2021-01-01T00:00:00Z", "2021-01-01T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2022", "dukascopy_trading_breaks_calendar"]],
+    ["mlk_2021", "Martin Luther King Jr. Day", "expected_holiday_closure", "2021-01-18T18:00:00Z", "2021-01-18T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_mlk_exact_2016", "dukascopy_mlk_notice", "us_opm_federal_holidays"]],
+    ["presidents_2021", "Washington's Birthday", "expected_holiday_closure", "2021-02-15T18:00:00Z", "2021-02-15T22:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_presidents_2025", "us_opm_federal_holidays"]],
+    ["good_friday_2021", "Good Friday", "expected_holiday_closure", "2021-04-01T22:00:00Z", "2021-04-02T21:00:00Z", "high", ["dukascopy_easter_exact_2015", "dukascopy_easter_2021"]],
+    ["memorial_2021", "Memorial Day", "expected_holiday_closure", "2021-05-31T17:00:00Z", "2021-05-31T21:00:00Z", "high", ["dukascopy_memorial_2021", "dukascopy_memorial_exact", "us_opm_federal_holidays"]],
+    ["independence_observed_2021", "Independence Day observed", "expected_holiday_closure", "2021-07-05T17:00:00Z", "2021-07-05T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_independence_2022", "us_opm_federal_holidays"]],
+    ["labor_2021", "Labor Day", "expected_holiday_closure", "2021-09-06T17:00:00Z", "2021-09-06T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_labor_exact_2013", "dukascopy_labor_2024", "us_opm_federal_holidays"]],
+    ["thanksgiving_2021", "Thanksgiving Day", "expected_holiday_closure", "2021-11-25T18:00:00Z", "2021-11-25T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "us_opm_federal_holidays"]],
+    ["thanksgiving_friday_2021", "Thanksgiving Friday early close", "expected_special_hours_closure", "2021-11-26T19:00:00Z", "2021-11-26T22:00:00Z", "medium", ["dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "dukascopy_thanksgiving_2025"]],
+    ["christmas_observed_2021", "Christmas Day observed", "expected_holiday_closure", "2021-12-23T23:00:00Z", "2021-12-24T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2022", "us_opm_federal_holidays"]],
+
+    ["mlk_2022", "Martin Luther King Jr. Day", "expected_holiday_closure", "2022-01-17T18:00:00Z", "2022-01-17T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_mlk_exact_2016", "dukascopy_mlk_notice", "us_opm_federal_holidays"]],
+    ["presidents_2022", "Washington's Birthday", "expected_holiday_closure", "2022-02-21T20:00:00Z", "2022-02-21T22:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_presidents_2025", "us_opm_federal_holidays"]],
+    ["good_friday_2022", "Good Friday", "expected_holiday_closure", "2022-04-14T22:00:00Z", "2022-04-15T21:00:00Z", "high", ["dukascopy_easter_exact_2015", "dukascopy_trading_breaks_calendar"]],
+    ["memorial_2022", "Memorial Day", "expected_holiday_closure", "2022-05-30T19:00:00Z", "2022-05-30T21:00:00Z", "high", ["dukascopy_memorial_exact", "dukascopy_memorial_2024", "us_opm_federal_holidays"]],
+    ["juneteenth_observed_2022", "Juneteenth observed", "expected_holiday_closure", "2022-06-20T19:00:00Z", "2022-06-20T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_juneteenth_2024", "us_opm_federal_holidays"]],
+    ["independence_2022", "Independence Day", "expected_holiday_closure", "2022-07-04T19:00:00Z", "2022-07-04T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_independence_2022", "us_opm_federal_holidays"]],
+    ["labor_2022", "Labor Day", "expected_holiday_closure", "2022-09-05T19:00:00Z", "2022-09-05T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_labor_exact_2013", "dukascopy_labor_2024", "us_opm_federal_holidays"]],
+    ["thanksgiving_2022", "Thanksgiving Day", "expected_holiday_closure", "2022-11-24T20:00:00Z", "2022-11-24T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "us_opm_federal_holidays"]],
+    ["thanksgiving_friday_2022", "Thanksgiving Friday early close", "expected_special_hours_closure", "2022-11-25T19:00:00Z", "2022-11-25T22:00:00Z", "medium", ["dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "dukascopy_thanksgiving_2025"]],
+    ["christmas_observed_2022", "Christmas Day observed", "expected_holiday_closure", "2022-12-25T22:00:00Z", "2022-12-26T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2022", "us_opm_federal_holidays"]],
+
+    ["new_year_observed_2023", "New Year's Day observed", "expected_holiday_closure", "2023-01-01T22:00:00Z", "2023-01-02T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2022", "us_opm_federal_holidays"]],
+    ["mlk_2023", "Martin Luther King Jr. Day", "expected_holiday_closure", "2023-01-16T18:00:00Z", "2023-01-16T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_mlk_exact_2016", "dukascopy_mlk_notice", "us_opm_federal_holidays"]],
+    ["presidents_2023", "Washington's Birthday", "expected_holiday_closure", "2023-02-20T20:00:00Z", "2023-02-20T22:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_presidents_2025", "us_opm_federal_holidays"]],
+    ["good_friday_2023", "Good Friday", "expected_holiday_closure", "2023-04-06T22:00:00Z", "2023-04-07T21:00:00Z", "high", ["dukascopy_easter_exact_2015", "dukascopy_trading_breaks_calendar"]],
+    ["memorial_2023", "Memorial Day", "expected_holiday_closure", "2023-05-29T19:00:00Z", "2023-05-29T21:00:00Z", "high", ["dukascopy_memorial_exact", "dukascopy_memorial_2024", "us_opm_federal_holidays"]],
+    ["juneteenth_2023", "Juneteenth", "expected_holiday_closure", "2023-06-19T19:00:00Z", "2023-06-19T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_juneteenth_2024", "us_opm_federal_holidays"]],
+    ["independence_2023", "Independence Day", "expected_holiday_closure", "2023-07-04T19:00:00Z", "2023-07-04T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_independence_2022", "us_opm_federal_holidays"]],
+    ["labor_2023", "Labor Day", "expected_holiday_closure", "2023-09-04T19:00:00Z", "2023-09-04T21:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_labor_exact_2013", "dukascopy_labor_2024", "us_opm_federal_holidays"]],
+    ["thanksgiving_2023", "Thanksgiving Day", "expected_holiday_closure", "2023-11-23T19:00:00Z", "2023-11-23T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "us_opm_federal_holidays"]],
+    ["thanksgiving_friday_2023", "Thanksgiving Friday early close", "expected_special_hours_closure", "2023-11-24T18:00:00Z", "2023-11-24T22:00:00Z", "high", ["dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023"]],
+    ["christmas_2023", "Christmas Day", "expected_holiday_closure", "2023-12-24T22:00:00Z", "2023-12-25T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2023", "us_opm_federal_holidays"]],
+    ["new_year_2024", "New Year's Day", "expected_holiday_closure", "2023-12-31T22:00:00Z", "2024-01-01T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2023", "us_opm_federal_holidays"]],
+
+    ["mlk_2024", "Martin Luther King Jr. Day", "expected_holiday_closure", "2024-01-15T20:00:00Z", "2024-01-15T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_mlk_exact_2016", "dukascopy_mlk_notice", "us_opm_federal_holidays"]],
+    ["presidents_2024", "Washington's Birthday", "expected_holiday_closure", "2024-02-19T20:00:00Z", "2024-02-19T22:00:00Z", "medium", ["dukascopy_general_features", "dukascopy_presidents_2025", "us_opm_federal_holidays"]],
+    ["good_friday_2024", "Good Friday", "expected_holiday_closure", "2024-03-28T23:00:00Z", "2024-03-29T22:00:00Z", "high", ["dukascopy_easter_exact_2015", "dukascopy_easter_2024"]],
+    ["memorial_2024", "Memorial Day", "expected_holiday_closure", "2024-05-27T19:00:00Z", "2024-05-27T21:00:00Z", "high", ["dukascopy_memorial_2024", "dukascopy_memorial_exact", "us_opm_federal_holidays"]],
+    ["juneteenth_2024", "Juneteenth", "expected_holiday_closure", "2024-06-19T19:00:00Z", "2024-06-19T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_juneteenth_2024", "us_opm_federal_holidays"]],
+    ["independence_2024", "Independence Day", "expected_holiday_closure", "2024-07-04T19:00:00Z", "2024-07-04T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_independence_2022", "us_opm_federal_holidays"]],
+    ["labor_2024", "Labor Day", "expected_holiday_closure", "2024-09-02T19:00:00Z", "2024-09-02T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_labor_exact_2013", "dukascopy_labor_2024", "us_opm_federal_holidays"]],
+    ["thanksgiving_2024", "Thanksgiving Day", "expected_holiday_closure", "2024-11-28T20:00:00Z", "2024-11-28T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "us_opm_federal_holidays"]],
+    ["thanksgiving_friday_2024", "Thanksgiving Friday early close", "expected_special_hours_closure", "2024-11-29T20:00:00Z", "2024-11-29T22:00:00Z", "medium", ["dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2023", "dukascopy_thanksgiving_2025"]],
+    ["christmas_eve_2024", "Christmas Eve early close", "expected_special_hours_closure", "2024-12-24T19:00:00Z", "2024-12-24T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2024", "dukascopy_trading_breaks_calendar"]],
+    ["christmas_2024", "Christmas Day", "expected_holiday_closure", "2024-12-24T23:00:00Z", "2024-12-25T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2024", "us_opm_federal_holidays"]],
+    ["new_year_2025", "New Year's Day", "expected_holiday_closure", "2024-12-31T23:00:00Z", "2025-01-01T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2024", "us_opm_federal_holidays"]],
+
+    ["mlk_2025", "Martin Luther King Jr. Day", "expected_holiday_closure", "2025-01-20T20:00:00Z", "2025-01-20T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_mlk_exact_2016", "dukascopy_mlk_notice", "us_opm_federal_holidays"]],
+    ["presidents_2025", "Washington's Birthday", "expected_holiday_closure", "2025-02-17T20:00:00Z", "2025-02-17T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_presidents_2025", "us_opm_federal_holidays"]],
+    ["good_friday_2025", "Good Friday", "expected_holiday_closure", "2025-04-17T22:00:00Z", "2025-04-18T21:00:00Z", "high", ["dukascopy_easter_exact_2015", "dukascopy_easter_2025"]],
+    ["memorial_2025", "Memorial Day", "expected_holiday_closure", "2025-05-26T19:00:00Z", "2025-05-26T21:00:00Z", "high", ["dukascopy_memorial_2025", "dukascopy_memorial_exact", "us_opm_federal_holidays"]],
+    ["juneteenth_2025", "Juneteenth", "expected_holiday_closure", "2025-06-19T19:00:00Z", "2025-06-19T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_juneteenth_2025", "us_opm_federal_holidays"]],
+    ["independence_2025", "Independence Day", "expected_holiday_closure", "2025-07-04T17:00:00Z", "2025-07-04T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_independence_2025", "us_opm_federal_holidays"]],
+    ["labor_2025", "Labor Day", "expected_holiday_closure", "2025-09-01T19:00:00Z", "2025-09-01T21:00:00Z", "high", ["dukascopy_general_features", "dukascopy_labor_exact_2013", "dukascopy_labor_2024", "us_opm_federal_holidays"]],
+    ["thanksgiving_2025", "Thanksgiving Day", "expected_holiday_closure", "2025-11-27T20:00:00Z", "2025-11-27T22:00:00Z", "high", ["dukascopy_general_features", "dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2025", "us_opm_federal_holidays"]],
+    ["thanksgiving_friday_2025", "Thanksgiving Friday early close", "expected_special_hours_closure", "2025-11-28T20:00:00Z", "2025-11-28T22:00:00Z", "high", ["dukascopy_thanksgiving_exact_2017", "dukascopy_thanksgiving_2025"]],
+    ["christmas_eve_2025", "Christmas Eve early close", "expected_special_hours_closure", "2025-12-24T19:00:00Z", "2025-12-24T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2025", "dukascopy_trading_breaks_calendar"]],
+    ["christmas_2025", "Christmas Day", "expected_holiday_closure", "2025-12-24T23:00:00Z", "2025-12-25T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2025", "us_opm_federal_holidays"]],
+    ["new_year_2026", "New Year's Day", "expected_holiday_closure", "2025-12-31T23:00:00Z", "2026-01-01T22:00:00Z", "medium", ["dukascopy_holiday_exact_2013", "dukascopy_christmas_2025", "us_opm_federal_holidays"]]
+  ]
+}

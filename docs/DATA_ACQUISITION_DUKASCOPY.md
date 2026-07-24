@@ -20,6 +20,12 @@ The pipeline has three explicit gates:
 Research code may consume a canonical dataset. It must not download data or append
 MT5 records to a Dukascopy dataset.
 
+Holiday and special-hours classification is a separate, report-only D002
+overlay documented in
+[`D002_XAUUSD_HOLIDAY_SPECIAL_HOURS.md`](D002_XAUUSD_HOLIDAY_SPECIAL_HOURS.md).
+It does not alter the frozen D001 calendar, verified BI5 files, or manifest
+semantics.
+
 ## Source and Format Contract
 
 The default source identifier is `dukascopy-public-bi5`. It requires no paid
@@ -99,11 +105,127 @@ left by an interruption before the manifest update is recovered without another
 network request. Malformed or corrupt non-empty objects are never accepted as
 closures.
 
-Transient network errors, HTTP 408/425/429, and server errors use bounded
-exponential backoff. Permanent HTTP errors do not. A persistent HTTP/2-capable
-client avoids reconnecting for every native hour; requests are still throttled
-according to TOML settings. Every partition emits structured JSON progress; a
-JSONL copy is written under `data/logs/dukascopy/` unless `--no-log-file` is used.
+Transient network errors (including timeouts and stream resets), HTTP
+408/425/429, and server errors use the configured server-friendly retry waits of
+15, 60, and 300 seconds. A larger source `Retry-After` value takes precedence.
+Permanent HTTP errors do not retry. The shared HTTPX client uses HTTP/1.1
+(`http2=False`) to reduce stream-reset failures and retains the connection across
+sequential archive requests.
+
+The downloader waits 2 seconds after every completed partition request by default,
+including successful requests. Override that delay for a run with:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD --start 2025-01-07 --end 2025-01-08 \
+  --request-delay-seconds 3.0
+```
+
+After five consecutive partitions end in transient source failures, the downloader
+pauses for 900 seconds before continuing. A successful download or confirmed
+expected closure resets the counter. `retry_backoff_seconds`,
+`circuit_breaker_threshold`, and `circuit_breaker_pause_seconds` are configurable
+in `config/dukascopy_data.toml`; the request delay and both circuit-breaker values
+also have CLI overrides. These controls do not alter manifest statuses: an HTTP 429,
+503, timeout, or stream reset remains a failed/unresolved partition and cannot
+become an expected closure.
+
+Every partition emits structured JSON progress; a JSONL copy is written under
+`data/logs/dukascopy/` unless `--no-log-file` is used.
+
+### Optional proxy
+
+Direct connections remain the default. Pass one HTTP(S) proxy directly when
+required:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD --start 2025-01-07 --end 2025-01-08 \
+  --proxy-url 'http://username:password@proxy-host:port'
+```
+
+For unattended use, keep the value in the `DUKASCOPY_PROXY_URL` environment
+variable. The CLI uses it automatically when `--proxy-url` is omitted:
+
+```bash
+export DUKASCOPY_PROXY_URL='http://username:password@proxy-host:port'
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD --start 2025-01-07 --end 2025-01-08
+```
+
+An explicit CLI value takes precedence over the environment variable:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD --start 2025-01-07 --end 2025-01-08 \
+  --proxy-url "$DUKASCOPY_PROXY_URL"
+```
+
+Proxy credentials are passed only to HTTPX. They are not written to the manifest or
+structured logs; any proxy URL included in an initialization or transport
+diagnostic has its complete username and password replaced with `***:***`.
+
+For a small stable pool, create a local text file with one HTTP(S) proxy URL per
+line. Blank lines and lines whose first non-whitespace character is `#` are ignored.
+Exact duplicates are removed while preserving the first occurrence:
+
+```text
+# primary routes
+http://username:password@proxy-host-1:port
+http://username:password@proxy-host-2:port
+
+# fallback route
+http://username:password@proxy-host-3:port
+```
+
+Start or resume through that pool with:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD --start 2025-01-07 --end 2025-01-08 \
+  --proxy-file /secure/path/dukascopy-proxies.txt
+```
+
+`--proxy-url` and `--proxy-file` are mutually exclusive. Proxy files are validated
+before acquisition starts, and a file with no usable entries fails immediately.
+The downloader never prints the file contents. Keep the file outside the repository,
+restrict its filesystem permissions, and do not commit it. Supplying credentials on
+the command line can expose them to shell history or process inspection; prefer a
+protected proxy file or `DUKASCOPY_PROXY_URL` environment variable.
+
+The pool keeps using a healthy proxy rather than rotating on every request. By
+default, two consecutive proxy-specific transient failures rotate to the next proxy
+in stable round-robin order. The rotated-out proxy cools down for 300 seconds.
+Override those defaults with `--proxy-rotate-after-failures` and
+`--proxy-cooldown-seconds`. HTTP 429/502/503/504, timeouts, resets, SSL/TLS transport
+failures, and protocol stream errors affect proxy health. Expected closures,
+BI5/checksum failures, local I/O errors, and deterministic HTTP 4xx responses do
+not.
+
+Cooling proxies are skipped. If every proxy is cooling down, the downloader waits
+until the earliest cooldown expires and emits a credential-safe `proxy_pool_wait`
+event. A `proxy_rotation` event records only masked previous/next proxy URLs. Pool
+rotation happens inside the existing retry policy; the global source circuit breaker
+is deferred while untried healthy pool members remain and can activate only after
+transient failures span the available pool. Direct and single-`--proxy-url` modes
+retain the original circuit-breaker behavior.
+
+Example full-range resume using the pool without redownloading verified objects:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD \
+  --start 2021-01-01 \
+  --end 2026-07-18 \
+  --output-root data/raw/dukascopy \
+  --only failed-or-missing \
+  --proxy-file /secure/path/dukascopy-proxies.txt \
+  --request-delay-seconds 3
+```
+
+Use a few reliable, long-lived proxies. Rapid per-request rotation creates more
+connections, makes failures harder to attribute, and is intentionally not the pool
+strategy.
 
 To retry only failed or absent work:
 
@@ -142,54 +264,157 @@ data/reports/dukascopy_XAUUSD_download_quality.md
 
 Every expected hour is classified as exactly one of:
 
-- `verified_data`: file exists, SHA-256 matches, and BI5 validation succeeds.
+- `verified_data`: the expected BI5 file exists; its manifest path, partition
+  timestamp, byte size, and SHA-256 agree with disk; BI5 decoding succeeds; and
+  the manifest record count is a non-negative integer equal to the decoded count.
 - `expected_market_closure`: an explicit configured calendar rule matches and the
-  partition also has empty, missing, or explicit no-data evidence.
+  manifest preserves affirmative empty-response or explicit no-data source
+  evidence.
 - `missing_partition`: no accepted source object is available.
 - `corrupt_partition`: file SHA-256 differs from the manifest.
 - `malformed_payload`: checksum matches but BI5/LZMA validation fails.
 - `unresolved_status`: a failure, unknown status, or unmanifested object needs
   intervention.
 
-### XAUUSD daily trading break
+The verifier generates the complete UTC-hour sequence for `[start, end)` instead
+of iterating only over files or manifest entries. It therefore reports an hour
+that is absent from both disk and the manifest as `missing_partition`. Duplicate
+raw JSON keys are rejected during manifest parsing, and duplicate declared
+`partition_timestamp` values are reported as manifest errors rather than silently
+overwriting or aliasing an hourly record.
+
+Each completed report prints and stores this reconciliation:
+
+```text
+expected_partitions =
+verified +
+expected_market_closures +
+missing +
+corrupt +
+unresolved
+```
+
+For the reconciliation, `corrupt` includes checksum-corrupt and malformed
+payload classifications. The report also stores `accounted_partitions` and a
+`balanced` boolean. The verifier exits nonzero if reconciliation is unbalanced or
+if `missing`, `corrupt`, or `unresolved` is nonzero.
+
+### Shared XAUUSD market calendar
 
 Dukascopy Bank's published [Trading Hours](https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/)
-table specifies an XAU/USD trading break of 21:00–22:00 GMT/UTC during summer
-time and 22:00–23:00 GMT/UTC during winter time. D001 represents both published
-intervals as one 22:00–23:00 local interval using the IANA `Europe/London`
-calendar:
+specifies ordinary trading from Sunday 21:00 UTC through Friday 21:00 UTC
+during summer time and from Sunday 22:00 UTC through Friday 22:00 UTC during
+winter time. The same table specifies an XAU/USD maintenance break of
+21:00–22:00 UTC during summer time and 22:00–23:00 UTC during winter time.
 
-| London calendar state | London local interval | Matching UTC partition |
-|---|---|---|
-| BST (UTC+01:00) | 22:00–23:00 | 21:00–22:00 UTC |
-| GMT (UTC+00:00) | 22:00–23:00 | 22:00–23:00 UTC |
+D001 represents both the weekly session and daily maintenance boundaries in one
+versioned `symbol_market_calendars.XAUUSD` rule using the IANA
+`Europe/London` calendar:
+
+| Calendar interval | London local time | Summer UTC | Winter UTC |
+|---|---|---|---|
+| Weekly market close | Friday 22:00 through Sunday 22:00 | Friday 21:00 through Sunday 21:00 | Friday 22:00 through Sunday 22:00 |
+| Daily maintenance | 22:00–23:00 Monday–Friday | 21:00–22:00 UTC | 22:00–23:00 UTC |
 
 The timezone database, rather than a hard-coded month or list of transition dates,
-therefore determines each year's DST boundaries. The configured local weekdays are
-Monday through Friday (`0` through `4`). The rule is nested under
-`symbol_daily_breaks.XAUUSD`, so it does not change any other instrument. The
-source URL, named calendar, local interval, and weekdays are retained in the TOML
-and copied into every JSON verification report.
+therefore determines each year's DST boundaries. On transition weekends, the
+Friday and Sunday UTC boundaries can differ by one hour because each boundary is
+converted independently through the London calendar. The rule is symbol-specific
+and does not change other instruments. Its source URL, named calendar, weekly
+boundaries, maintenance interval, and weekdays are retained in the TOML and copied
+into every JSON verification report. The downloader and verifier call the same
+calendar function.
 
 The verifier requires two independent conditions before it reports
 `expected_market_closure`:
 
 1. The exact native UTC hour matches the configured rule for the requested symbol.
-2. The raw response is empty, the partition has no payload, or the manifest uses an
-   explicitly enumerated no-data status.
+2. The manifest preserves affirmative source evidence that the response was empty,
+   or uses an explicitly enumerated no-data status.
 
 A calendar match does not convert an HTTP or network error into a closure. A
-recorded `empty_payload` is accepted only inside the matching calendar hour. A
-non-empty object is always checksum-checked and BI5-validated first; checksum drift
-remains `corrupt_partition`, and malformed LZMA/BI5 or placeholder content remains
-`malformed_payload`, even during the break.
+recorded `empty_payload` is accepted only inside the matching calendar hour.
+Missing files or manifest records, timeouts, proxy failures, HTTP responses,
+decode failures, and ambiguous prior closure labels are not closure evidence. A
+non-empty object is always checksum-checked and BI5-validated first; checksum
+drift remains `corrupt_partition`, and malformed LZMA/BI5 or placeholder content
+remains `malformed_payload`, even during a calculated closure.
 
-The other default calendar rule remains Saturday (UTC weekday `5`) as a full-day
-closure. Additional audited rules may be added using
-`full_day_closed_weekdays`, `explicit_closed_dates`, or
-`closed_utc_hours_by_weekday`. An empty response outside a configured closure,
-explicit no-data outside a configured closure, and all arbitrary HTTP/network
-failures remain unresolved.
+When the downloader receives a confirmed empty response inside the shared
+calendar, it records `status = expected_market_closure` immediately and preserves
+the `empty_payload:` source evidence in `error_details`. Empty responses during
+open hours remain failed/unresolved. Legacy UTC rules remain available through
+`full_day_closed_weekdays`, `explicit_closed_dates`, and
+`closed_utc_hours_by_weekday`, but the default XAUUSD weekend is not duplicated in
+those tables.
+
+Existing manifests can be re-evaluated without source access or manifest writes:
+
+```bash
+python scripts/verify_dukascopy_downloads.py \
+  --symbol XAUUSD \
+  --start 2024-10-07T19:00:00Z \
+  --end 2026-01-01T00:00:00Z \
+  --reclassify-empty-closures
+```
+
+This report-only mode never downloads data and never mutates the manifest. Its
+JSON/Markdown outputs list every `empty_payload` transition from unresolved to
+expected closure and group every remaining blocking timestamp by evidence/error
+kind. Ambiguous legacy labels that do not preserve affirmative empty/no-data
+evidence remain unresolved even if the calendar says the market was closed.
+
+### Targeted unresolved-evidence recovery
+
+Use the verifier JSON as an exact request allowlist when source evidence must be
+refreshed:
+
+```bash
+python scripts/download_dukascopy_ticks.py \
+  --symbol XAUUSD \
+  --start 2021-01-01T00:00:00Z \
+  --end 2026-01-01T00:00:00Z \
+  --targeted-recovery-report data/reports/dukascopy_XAUUSD_download_quality.json \
+  --targeted-recovery-expected-count 6754 \
+  --proxy-file proxies.txt
+```
+
+The downloader validates that the report symbol and `[start, end)` range match
+exactly. Every timestamp in every
+`reclassification_audit.remaining_unresolved_by_error_kind` group forms the
+request allowlist; this includes empty-payload, HTTP, timeout, connection, and
+other unresolved evidence categories without special-case duplication. Every
+other hour is excluded before file or transport processing.
+
+Before constructing a network client, targeted recovery fails closed unless the
+report is balanced, covers every expected hour exactly once, the grouped
+timestamps exactly equal the report's unresolved classifications, no timestamp
+is duplicated or outside the requested range, and no verified or confirmed
+closure classification overlaps the allowlist. The optional
+`--targeted-recovery-expected-count` adds an operator-supplied exact-count gate.
+The `targeted_recovery_preflight` JSONL event preserves these audit counts and
+per-group totals. An allowlisted hour that has become verified or a confirmed
+closure is skipped on resume.
+
+Each final attempt records `evidence_kind`, HTTP status, response byte length,
+retry count, masked proxy identity, and final-attempt timestamp alongside the
+existing status, error, checksum, and record-count fields. Credentials are never
+stored. A valid BI5 response is written through the existing atomic path; empty,
+HTTP, proxy, timeout, TLS/SSL, connection, and malformed-response outcomes retain
+their distinct evidence kinds.
+
+After recovery, write a separate special-hours research list while rerunning the
+full verifier:
+
+```bash
+python scripts/verify_dukascopy_downloads.py \
+  --symbol XAUUSD \
+  --start 2021-01-01T00:00:00Z \
+  --end 2026-01-01T00:00:00Z \
+  --reclassify-empty-closures \
+  --holiday-candidates-report \
+    data/reports/dukascopy_XAUUSD_holiday_candidates.json
+```
 
 ## Canonical Build
 
@@ -274,9 +499,9 @@ experiment.
   Coverage is a measured report outcome, not a source claim.
 - XAUUSD scaling and binary-field ordering are explicit source assumptions that
   must be re-audited if Dukascopy changes its format.
-- The daily-break rule covers only the source-backed XAUUSD interval. Unconfigured
-  Friday/Sunday session hours and special US-holiday hours can remain unresolved;
-  they are not inferred from this rule.
+- The shared calendar covers the source-backed XAUUSD weekly session and daily
+  maintenance interval. Special US-holiday hours can remain unresolved; they are
+  not inferred from the ordinary calendar.
 - An empty/no-tick object is not accepted automatically. It remains unresolved
   unless the exact symbol calendar rule also matches.
 - Large builds process one UTC day at a time but still require enough memory for one

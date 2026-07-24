@@ -23,9 +23,12 @@ logs_root = "data/logs/dukascopy"
 [download]
 timeout_seconds = 30.0
 max_attempts = 4
-backoff_initial_seconds = 1.0
-backoff_max_seconds = 16.0
-throttle_seconds = 0.25
+retry_backoff_seconds = [15.0, 60.0, 300.0]
+request_delay_seconds = 2.0
+circuit_breaker_threshold = 5
+circuit_breaker_pause_seconds = 900.0
+proxy_rotate_after_failures = 2
+proxy_cooldown_seconds = 300.0
 max_compressed_bytes = 104857600
 user_agent = "AurumFlow-D001/1.0 (+research data acquisition)"
 
@@ -33,22 +36,27 @@ user_agent = "AurumFlow-D001/1.0 (+research data acquisition)"
 start_inclusive = true
 end_exclusive = true
 closure_timezone = "UTC"
-# Saturday is an explicit full-day UTC closure. Symbol-specific breaks below use
-# their own named civil-time calendar and do not apply to other instruments.
-full_day_closed_weekdays = [5]
+# Legacy UTC rules remain available for explicitly configured instruments or
+# dates. XAUUSD uses the single symbol calendar below instead.
+full_day_closed_weekdays = []
 explicit_closed_dates = []
 closed_utc_hours_by_weekday = {}
 
-[partition_rules.symbol_daily_breaks.XAUUSD]
-# Dukascopy publishes 21:00-22:00 UTC in summer and 22:00-23:00 UTC in winter.
-# Expressing that as 22:00-23:00 Europe/London delegates transition dates to the
-# IANA timezone database instead of hard-coding seasonal UTC dates.
+[partition_rules.symbol_market_calendars.XAUUSD]
+# Dukascopy publishes Sunday-Friday market hours and the XAU/USD maintenance
+# break one UTC hour earlier during summer time than winter time. Expressing all
+# boundaries in Europe/London delegates both ordinary and transition weeks to
+# the IANA timezone database instead of hard-coding seasonal UTC dates.
 calendar_timezone = "Europe/London"
-local_start = "22:00"
-local_end = "23:00"
-local_weekdays = [0, 1, 2, 3, 4]
+weekly_close_local_weekday = 4
+weekly_close_local_time = "22:00"
+weekly_reopen_local_weekday = 6
+weekly_reopen_local_time = "22:00"
+maintenance_local_start = "22:00"
+maintenance_local_end = "23:00"
+maintenance_local_weekdays = [0, 1, 2, 3, 4]
 source_url = "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/"
-source_description = "Dukascopy XAU/USD trading breaks: summer 21:00-22:00 UTC; winter 22:00-23:00 UTC"
+source_description = "Dukascopy market hours: Sunday-Friday 21:00 UTC summer / 22:00 UTC winter; XAU/USD break: 21:00-22:00 UTC summer / 22:00-23:00 UTC winter"
 
 [validation]
 max_spread_absolute = 5.0

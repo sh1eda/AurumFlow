@@ -36,6 +36,14 @@ class ConfigurationError(DukascopyError):
     """The versioned data-source configuration is invalid."""
 
 
+class DuplicateManifestKeyError(ConfigurationError):
+    """A JSON manifest contains a duplicate key and is therefore ambiguous."""
+
+    def __init__(self, key: str) -> None:
+        self.key = key
+        super().__init__(f"duplicate JSON key in manifest: {key!r}")
+
+
 class PayloadValidationError(DukascopyError):
     """A downloaded archive object cannot be accepted as a tick partition."""
 
@@ -144,41 +152,66 @@ def load_config(path: str | Path) -> PipelineConfig:
     partition_rules = payload["partition_rules"]
     if partition_rules.get("closure_timezone", "UTC") != "UTC":
         raise ConfigurationError("legacy closure rules must use UTC")
-    daily_breaks = partition_rules.get("symbol_daily_breaks", {})
-    if not isinstance(daily_breaks, Mapping):
-        raise ConfigurationError("symbol_daily_breaks must be a table")
-    for configured_name, rule in daily_breaks.items():
+    market_calendars = partition_rules.get("symbol_market_calendars", {})
+    if not isinstance(market_calendars, Mapping):
+        raise ConfigurationError("symbol_market_calendars must be a table")
+    for configured_name, rule in market_calendars.items():
         name = configured_name.upper()
         if name not in symbols:
             raise ConfigurationError(
-                f"daily-break rule references unsupported symbol {configured_name!r}"
+                f"market calendar references unsupported symbol {configured_name!r}"
             )
         if not isinstance(rule, Mapping):
-            raise ConfigurationError(f"{name} daily-break rule must be a table")
+            raise ConfigurationError(f"{name} market calendar must be a table")
         calendar_timezone = str(rule.get("calendar_timezone", ""))
         try:
             ZoneInfo(calendar_timezone)
         except (ValueError, ZoneInfoNotFoundError) as exc:
             raise ConfigurationError(
-                f"{name} daily-break calendar_timezone is invalid: {calendar_timezone!r}"
+                f"{name} market calendar_timezone is invalid: {calendar_timezone!r}"
             ) from exc
-        start_minute = _parse_local_time(
-            rule.get("local_start"), field=f"{name}.local_start"
-        )
-        end_minute = _parse_local_time(
-            rule.get("local_end"), field=f"{name}.local_end"
-        )
-        if (end_minute - start_minute) % (24 * 60) != 60:
+        weekly_close_weekday = int(rule.get("weekly_close_local_weekday", -1))
+        weekly_reopen_weekday = int(rule.get("weekly_reopen_local_weekday", -1))
+        if (
+            weekly_close_weekday not in range(7)
+            or weekly_reopen_weekday not in range(7)
+            or weekly_close_weekday == weekly_reopen_weekday
+        ):
             raise ConfigurationError(
-                f"{name} daily break must span exactly one native hourly partition"
+                f"{name} weekly close/reopen weekdays must be distinct integers 0 through 6"
             )
-        weekdays = [int(day) for day in rule.get("local_weekdays", [])]
+        _parse_local_time(
+            rule.get("weekly_close_local_time"),
+            field=f"{name}.weekly_close_local_time",
+        )
+        _parse_local_time(
+            rule.get("weekly_reopen_local_time"),
+            field=f"{name}.weekly_reopen_local_time",
+        )
+        maintenance_start = _parse_local_time(
+            rule.get("maintenance_local_start"),
+            field=f"{name}.maintenance_local_start",
+        )
+        maintenance_end = _parse_local_time(
+            rule.get("maintenance_local_end"),
+            field=f"{name}.maintenance_local_end",
+        )
+        if (maintenance_end - maintenance_start) % (24 * 60) != 60:
+            raise ConfigurationError(
+                f"{name} maintenance break must span exactly one native hourly partition"
+            )
+        weekdays = [
+            int(day) for day in rule.get("maintenance_local_weekdays", [])
+        ]
         if not weekdays or any(day < 0 or day > 6 for day in weekdays):
             raise ConfigurationError(
-                f"{name}.local_weekdays must contain ISO weekday integers 0 through 6"
+                f"{name}.maintenance_local_weekdays must contain ISO weekday "
+                "integers 0 through 6"
             )
         if not str(rule.get("source_url", "")).startswith("https://"):
-            raise ConfigurationError(f"{name} daily-break rule requires an HTTPS source_url")
+            raise ConfigurationError(
+                f"{name} market calendar requires an HTTPS source_url"
+            )
     return PipelineConfig(
         path=config_path,
         repository_root=config_path.parent.parent,
@@ -274,6 +307,21 @@ def _parse_local_time(value: Any, *, field: str) -> int:
     return hour * 60 + minute
 
 
+def _cyclic_interval_contains(
+    value: int,
+    *,
+    start: int,
+    end: int,
+    cycle: int,
+) -> bool:
+    value %= cycle
+    start %= cycle
+    end %= cycle
+    if start < end:
+        return start <= value < end
+    return value >= start or value < end
+
+
 def expected_closure_rule(
     config: PipelineConfig,
     partition: Partition,
@@ -311,35 +359,82 @@ def expected_closure_rule(
     if symbol is None:
         return None
     normalized_symbol = symbol.upper()
-    daily_breaks = rules.get("symbol_daily_breaks", {})
-    rule = daily_breaks.get(normalized_symbol)
+    market_calendars = rules.get("symbol_market_calendars", {})
+    rule = market_calendars.get(normalized_symbol)
     if not isinstance(rule, Mapping):
         return None
     calendar_timezone = str(rule["calendar_timezone"])
     calendar = ZoneInfo(calendar_timezone)
     local_start = timestamp.astimezone(calendar)
     local_end = (timestamp + timedelta(hours=1)).astimezone(calendar)
-    configured_start = _parse_local_time(
-        rule["local_start"], field=f"{normalized_symbol}.local_start"
-    )
-    configured_end = _parse_local_time(
-        rule["local_end"], field=f"{normalized_symbol}.local_end"
-    )
     actual_start = local_start.hour * 60 + local_start.minute
     actual_end = local_end.hour * 60 + local_end.minute
-    local_weekdays = {int(day) for day in rule["local_weekdays"]}
+
+    weekly_close = (
+        int(rule["weekly_close_local_weekday"]) * 24 * 60
+        + _parse_local_time(
+            rule["weekly_close_local_time"],
+            field=f"{normalized_symbol}.weekly_close_local_time",
+        )
+    )
+    weekly_reopen = (
+        int(rule["weekly_reopen_local_weekday"]) * 24 * 60
+        + _parse_local_time(
+            rule["weekly_reopen_local_time"],
+            field=f"{normalized_symbol}.weekly_reopen_local_time",
+        )
+    )
+    local_minute_of_week = local_start.weekday() * 24 * 60 + actual_start
+    if _cyclic_interval_contains(
+        local_minute_of_week,
+        start=weekly_close,
+        end=weekly_reopen,
+        cycle=7 * 24 * 60,
+    ):
+        return {
+            "rule_id": f"{normalized_symbol}_weekly_market_close",
+            "rule_type": "symbol_weekly_market_close",
+            "symbol": normalized_symbol,
+            "calendar_timezone": calendar_timezone,
+            "local_interval": (
+                f"weekday {rule['weekly_close_local_weekday']} "
+                f"{rule['weekly_close_local_time']}-weekday "
+                f"{rule['weekly_reopen_local_weekday']} "
+                f"{rule['weekly_reopen_local_time']}"
+            ),
+            "local_weekday": local_start.weekday(),
+            "local_partition_start": local_start.isoformat(),
+            "utc_offset_seconds": int(local_start.utcoffset().total_seconds()),
+            "source_url": str(rule["source_url"]),
+        }
+
+    configured_start = _parse_local_time(
+        rule["maintenance_local_start"],
+        field=f"{normalized_symbol}.maintenance_local_start",
+    )
+    configured_end = _parse_local_time(
+        rule["maintenance_local_end"],
+        field=f"{normalized_symbol}.maintenance_local_end",
+    )
+    local_weekdays = {
+        int(day) for day in rule["maintenance_local_weekdays"]
+    }
     if (
         local_start.weekday() in local_weekdays
         and actual_start == configured_start
         and actual_end == configured_end
     ):
         return {
-            "rule_id": f"{normalized_symbol}_daily_break",
-            "rule_type": "symbol_daily_break",
+            "rule_id": f"{normalized_symbol}_daily_maintenance",
+            "rule_type": "symbol_daily_maintenance",
             "symbol": normalized_symbol,
             "calendar_timezone": calendar_timezone,
-            "local_interval": f"{rule['local_start']}-{rule['local_end']}",
+            "local_interval": (
+                f"{rule['maintenance_local_start']}-"
+                f"{rule['maintenance_local_end']}"
+            ),
             "local_weekday": local_start.weekday(),
+            "local_partition_start": local_start.isoformat(),
             "utc_offset_seconds": int(local_start.utcoffset().total_seconds()),
             "source_url": str(rule["source_url"]),
         }
@@ -358,16 +453,41 @@ def is_expected_closure(
 
 
 def manifest_no_data_evidence(entry: Mapping[str, Any] | None) -> str | None:
-    """Return narrowly enumerated no-data evidence; never infer it from HTTP errors."""
+    """Return affirmative no-data evidence; never infer it from a missing record."""
 
     if entry is None:
-        return "missing_manifest_and_payload"
+        return None
     status = str(entry.get("status", "")).strip().lower()
-    if status in {"missing", "no_data", "no-data", "expected_market_closure"}:
-        return f"manifest_status:{status}"
     error_details = str(entry.get("error_details") or "").strip().lower()
+    failure_markers = (
+        "http ",
+        "timeout",
+        "timed out",
+        "proxy",
+        "source request error",
+        "connection",
+        "stream reset",
+        "ssl:",
+        "tls",
+        "decode",
+        "lzma",
+        "malformed",
+        "checksum",
+        "missing file",
+        "file not found",
+        "connection reset",
+    )
+    if any(marker in error_details for marker in failure_markers):
+        return None
     if status == "failed" and error_details.startswith("empty_payload:"):
         return "empty_payload"
+    if status in {"no_data", "no-data"}:
+        return f"manifest_status:{status}"
+    if status == "expected_market_closure":
+        if error_details.startswith("empty_payload:"):
+            return "empty_payload"
+        if error_details.startswith(("no_data:", "no-data:")):
+            return "explicit_no_data"
     return None
 
 
@@ -493,6 +613,17 @@ def atomic_write_json(path: Path, payload: Any) -> None:
     atomic_write_bytes(path, encoded)
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build a JSON object while rejecting keys that json.loads would overwrite."""
+
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise DuplicateManifestKeyError(key)
+        result[key] = value
+    return result
+
+
 class Manifest:
     """Atomic JSON manifest with one current record per native partition."""
 
@@ -508,7 +639,10 @@ class Manifest:
         self.symbol = symbol.upper()
         mapping = config.symbol(self.symbol)
         if path.exists():
-            self.payload = json.loads(path.read_text(encoding="utf-8"))
+            self.payload = json.loads(
+                path.read_text(encoding="utf-8"),
+                object_pairs_hook=_reject_duplicate_json_keys,
+            )
             if self.payload.get("symbol") != self.symbol:
                 raise ConfigurationError(
                     f"manifest symbol {self.payload.get('symbol')!r} does not match {self.symbol}"
