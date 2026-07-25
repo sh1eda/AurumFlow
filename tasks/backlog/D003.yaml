@@ -1,0 +1,36 @@
+id: D003
+title: Build canonical XAUUSD dataset
+status: backlog
+priority: high
+
+objective: >
+  Combine validated Dukascopy source partitions into one canonical
+  dataset using the existing project pipeline.
+
+allowed_paths:
+  - src/data/
+  - scripts/
+  - tests/
+  - docs/
+
+forbidden_paths:
+  - src/live_trading/
+  - src/execution/
+  - config/production.yaml
+  - data/raw/
+
+acceptance_criteria:
+  - Existing dataset-combination command is identified and reused if valid.
+  - Raw data files are not modified.
+  - Output ordering is deterministic.
+  - Duplicate timestamps are detected.
+  - Dataset integrity report is generated.
+  - All existing tests pass.
+  - New tests cover canonical build behavior.
+
+validation_commands:
+  - pytest -q
+  - python -m scripts.validate_canonical_dataset
+
+max_iterations: 3
+human_approval_required: true
