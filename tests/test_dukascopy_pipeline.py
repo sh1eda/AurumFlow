@@ -11,7 +11,7 @@ import pytest
 
 from scripts import download_dukascopy_ticks as downloader
 from scripts import verify_dukascopy_downloads as verifier
-from scripts.build_dukascopy_canonical import build_canonical
+from scripts.build_dukascopy_canonical import CanonicalBuildError, build_canonical
 from scripts.dukascopy_common import (
     EmptyPayloadError,
     MalformedPayloadError,
@@ -2675,7 +2675,9 @@ def test_cli_loads_proxy_file_and_passes_pool_settings(monkeypatch, tmp_path):
     assert captured["proxy_cooldown_seconds"] == 45.0
 
 
-def test_canonical_quality_checks_and_deterministic_output(tmp_path, config):
+def test_canonical_builder_rejects_invalid_records_without_writing_parquet(
+    tmp_path, config
+):
     pytest.importorskip("pyarrow")
     start = parse_utc_boundary("2025-01-07T00:00:00Z")
     end = parse_utc_boundary("2025-01-07T01:00:00Z")
@@ -2707,38 +2709,27 @@ def test_canonical_quality_checks_and_deterministic_output(tmp_path, config):
         manifest_path=path,
         processed_root=tmp_path / "processed",
     )
-    first = build_canonical(**kwargs)
-    first_metadata_bytes = Path(first["metadata_path"]).read_bytes()
-    first_parquet = Path(first["dataset_root"]) / "date=2025-01-07" / "ticks.parquet"
-    first_checksum = hashlib.sha256(first_parquet.read_bytes()).hexdigest()
-    second = build_canonical(**kwargs)
-    second_checksum = hashlib.sha256(first_parquet.read_bytes()).hexdigest()
-    quality = first["quality_statistics"]
-    assert first["row_count"] == 4
-    assert quality["non_monotonic_timestamps"] == 1
-    assert quality["duplicate_records"] == 1
-    assert quality["duplicate_timestamps"] == 1
-    assert quality["crossed_spreads"] == 2
-    assert quality["implausible_spreads"] == 1
-    assert first["bid_ask_examples"][0]["timestamp"].endswith("00.500Z")
-    assert first["input_fingerprint"] == second["input_fingerprint"]
-    assert first_metadata_bytes == Path(second["metadata_path"]).read_bytes()
-    assert first_checksum == second_checksum
+    with pytest.raises(CanonicalBuildError, match="rejected 2"):
+        build_canonical(**kwargs)
+    failed_manifest = json.loads(
+        (tmp_path / "processed" / "canonical_manifest.json").read_text()
+    )
+    assert failed_manifest["status"] == "failed"
+    assert failed_manifest["rejected_record_count"] == 2
+    assert not list((tmp_path / "processed").rglob("*.parquet"))
 
 
-def test_builder_reports_missing_partition_without_imputation(tmp_path, config):
+def test_builder_rejects_missing_partition_without_imputation(tmp_path, config):
     pytest.importorskip("pyarrow")
     path = manifest_path(tmp_path)
     Manifest(path, config=config, symbol="XAUUSD").save()
-    metadata = build_canonical(
-        config=config,
-        symbol="XAUUSD",
-        start=parse_utc_boundary("2025-01-07T00:00:00Z"),
-        end=parse_utc_boundary("2025-01-07T01:00:00Z"),
-        raw_root=tmp_path / "raw",
-        manifest_path=path,
-        processed_root=tmp_path / "processed",
-    )
-    assert metadata["row_count"] == 0
-    assert metadata["coverage"]["unresolved_partitions"] == 1
-    assert metadata["exclusions"][0]["classification"] == "missing_partition"
+    with pytest.raises(CanonicalBuildError, match="1 unresolved partitions"):
+        build_canonical(
+            config=config,
+            symbol="XAUUSD",
+            start=parse_utc_boundary("2025-01-07T00:00:00Z"),
+            end=parse_utc_boundary("2025-01-07T01:00:00Z"),
+            raw_root=tmp_path / "raw",
+            manifest_path=path,
+            processed_root=tmp_path / "processed",
+        )

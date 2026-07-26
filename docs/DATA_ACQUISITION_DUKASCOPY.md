@@ -420,51 +420,54 @@ python scripts/verify_dukascopy_downloads.py \
 
 ```bash
 python scripts/build_dukascopy_canonical.py \
-  --symbol XAUUSD \
-  --start 2025-01-07 \
-  --end 2025-01-08
+  --start 2021-11-25T00:00:00Z \
+  --end 2021-11-29T00:00:00Z
 ```
 
-The builder independently verifies each selected checksum and payload. It never
-reads a raw partition whose classification is not `verified_data`, never imputes
-ticks, and never reads or joins the MT5 feed. Missing or excluded hours remain
-listed in dataset metadata and produce a nonzero exit status.
+The D003 builder independently verifies each selected checksum and payload. It
+never decodes a raw partition whose classification is not `verified_data`,
+never imputes ticks, and never reads or joins the MT5 feed. D001 regular
+closures and exact partitions in the accepted D002 report-only overlay are
+excluded and reconciled; a missing, corrupt, malformed, or unexplained hour
+stops the build.
 
 The canonical schema is:
 
 | Column | Type | Meaning |
 |---|---|---|
-| `timestamp` | `timestamp[ms, tz=UTC]` | Source hour plus millisecond offset |
+| `timestamp_utc` | `timestamp[ms, tz=UTC]` | Source hour plus millisecond offset |
 | `bid` | `float64` | Dukascopy bid after configured scaling |
 | `ask` | `float64` | Dukascopy ask after configured scaling |
 | `bid_volume` | `float32` | Source bid volume |
 | `ask_volume` | `float32` | Source ask volume |
+| `mid` | `float64` | `(bid + ask) / 2` |
+| `spread` | `float64` | `ask - bid` |
 | `symbol` | `string` | Requested canonical symbol |
-| `feed` | `string` | Always `dukascopy` |
-| `source_partition` | `timestamp[ms, tz=UTC]` | Native archive hour |
+| `source_partition` | `string` | Native archive hour in UTC |
 
 Output is partitioned as:
 
 ```text
-data/processed/dukascopy/XAUUSD/{dataset_id}/date=YYYY-MM-DD/ticks.parquet
-data/processed/dukascopy/XAUUSD/{dataset_id}/dataset_metadata.json
-data/processed/dukascopy/XAUUSD/latest.json
+data/canonical/xauusd_ticks/canonical_manifest.json
+data/canonical/xauusd_ticks/year=YYYY/month=MM/xauusd_ticks_YYYY-MM-DD.parquet
 ```
 
-`dataset_id` is derived from verified partition checksums, relevant configuration,
-the requested range, and the D001 code version. Rows use a stable chronological
-sort. Parquet options and metadata are fixed, daily files are atomically replaced,
-and `build_timestamp` is deterministically derived from the selected manifest
-inputs. Rebuilding identical verified inputs and configuration therefore produces
-the same fingerprint, metadata, and Parquet checksums.
+Rows use a stable chronological sort and exact duplicates are removed with
+within-partition and partition-boundary counts. Invalid records fail closed.
+Daily files are created atomically and never overwritten. The checkpointed
+manifest permits resume only when file hashes and source fingerprints match.
+Rebuilding identical verified inputs and configuration therefore reuses the
+completed output unchanged.
 
-Dataset metadata records requested and actual coverage, row count, source/feed,
-schema, UTC precision, source manifest hash, output checksums, quality statistics,
-exclusions, logical build timestamp, and code/config versions. It reports exact
-duplicates, duplicate timestamps, source-order reversals, crossed spreads,
-non-positive prices, spreads over the configured limit, malformed records, large
-tick gaps, and missing partitions. Records are reported rather than silently
-dropped or repaired.
+Run the independent D003 verifier with:
+
+```bash
+python -m scripts.validate_canonical_dataset
+```
+
+See [`D003_CANONICAL_XAUUSD_TICKS.md`](D003_CANONICAL_XAUUSD_TICKS.md) for the
+existing-builder assessment, complete manifest contract, resume rules, and
+verification scope.
 
 ## Reproducibility Procedure
 
