@@ -57,6 +57,9 @@ maintenance_local_end = "23:00"
 maintenance_local_weekdays = [0, 1, 2, 3, 4]
 source_url = "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/"
 source_description = "Dukascopy market hours: Sunday-Friday 21:00 UTC summer / 22:00 UTC winter; XAU/USD break: 21:00-22:00 UTC summer / 22:00-23:00 UTC winter"
+holiday_calendar_path = "config/dukascopy_XAUUSD_holiday_calendar.json"
+holiday_calendar_range_start_inclusive = "2021-01-01T00:00:00Z"
+holiday_calendar_range_end_exclusive = "2026-07-29T00:00:00Z"
 
 [validation]
 max_spread_absolute = 5.0

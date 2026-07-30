@@ -84,6 +84,45 @@ class SymbolConfig:
 
 
 @dataclass(frozen=True)
+class HolidayClosureInterval:
+    rule_id: str
+    rule_type: str
+    event: str
+    start_inclusive: datetime
+    end_exclusive: datetime
+    confidence: str
+    source_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class RecurringHolidayClosureRule:
+    rule_id: str
+    rule_type: str
+    event: str
+    timezone_name: str
+    local_weekdays: tuple[int, ...]
+    local_start_minutes: int
+    local_end_minutes: int
+    confidence: str
+    source_ids: tuple[str, ...]
+    only_when_market_calendar_offset_differs: bool
+
+
+@dataclass(frozen=True)
+class HolidayCalendarConfig:
+    path: Path
+    calendar_id: str
+    schema_version: int
+    symbol: str
+    start_inclusive: datetime
+    end_exclusive: datetime
+    accepted_confidence_levels: frozenset[str]
+    sources: Mapping[str, Mapping[str, Any]]
+    event_intervals: tuple[HolidayClosureInterval, ...]
+    recurring_rules: tuple[RecurringHolidayClosureRule, ...]
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     path: Path
     repository_root: Path
@@ -95,6 +134,7 @@ class PipelineConfig:
     partition_rules: Mapping[str, Any]
     validation: Mapping[str, Any]
     canonical: Mapping[str, Any]
+    holiday_calendars: Mapping[str, HolidayCalendarConfig]
 
     def symbol(self, name: str) -> SymbolConfig:
         try:
@@ -111,6 +151,9 @@ class PipelineConfig:
         except KeyError as exc:
             raise ConfigurationError(f"missing [paths].{name}") from exc
         return configured if configured.is_absolute() else self.repository_root / configured
+
+    def holiday_calendar(self, name: str) -> HolidayCalendarConfig | None:
+        return self.holiday_calendars.get(name.upper())
 
 
 def load_config(path: str | Path) -> PipelineConfig:
@@ -155,6 +198,8 @@ def load_config(path: str | Path) -> PipelineConfig:
     market_calendars = partition_rules.get("symbol_market_calendars", {})
     if not isinstance(market_calendars, Mapping):
         raise ConfigurationError("symbol_market_calendars must be a table")
+    repository_root = config_path.parent.parent
+    holiday_calendars: dict[str, HolidayCalendarConfig] = {}
     for configured_name, rule in market_calendars.items():
         name = configured_name.upper()
         if name not in symbols:
@@ -212,9 +257,44 @@ def load_config(path: str | Path) -> PipelineConfig:
             raise ConfigurationError(
                 f"{name} market calendar requires an HTTPS source_url"
             )
+        holiday_fields = (
+            rule.get("holiday_calendar_path"),
+            rule.get("holiday_calendar_range_start_inclusive"),
+            rule.get("holiday_calendar_range_end_exclusive"),
+        )
+        if any(value is not None for value in holiday_fields):
+            if any(value is None for value in holiday_fields):
+                raise ConfigurationError(
+                    f"{name} holiday calendar path and configured range "
+                    "must be provided together"
+                )
+            configured_path = Path(str(holiday_fields[0])).expanduser()
+            calendar_path = (
+                configured_path
+                if configured_path.is_absolute()
+                else repository_root / configured_path
+            )
+            holiday_calendars[name] = _load_holiday_calendar(
+                calendar_path.resolve(),
+                symbol=name,
+                expected_start=_calendar_boundary(
+                    holiday_fields[1],
+                    field=(
+                        f"{name}."
+                        "holiday_calendar_range_start_inclusive"
+                    ),
+                ),
+                expected_end=_calendar_boundary(
+                    holiday_fields[2],
+                    field=(
+                        f"{name}."
+                        "holiday_calendar_range_end_exclusive"
+                    ),
+                ),
+            )
     return PipelineConfig(
         path=config_path,
-        repository_root=config_path.parent.parent,
+        repository_root=repository_root,
         version=version,
         source=source,
         symbols=symbols,
@@ -223,6 +303,7 @@ def load_config(path: str | Path) -> PipelineConfig:
         partition_rules=partition_rules,
         validation=payload["validation"],
         canonical=payload["canonical"],
+        holiday_calendars=holiday_calendars,
     )
 
 
@@ -248,6 +329,352 @@ def parse_utc_boundary(value: str) -> datetime:
     if parsed.minute or parsed.second or parsed.microsecond:
         raise ValueError("boundaries must align to a whole UTC hour")
     return parsed
+
+
+_HOLIDAY_CLOSURE_TYPES = {
+    "expected_holiday_closure",
+    "expected_special_hours_closure",
+}
+_HOLIDAY_CONFIDENCE_LEVELS = {"high", "medium", "low"}
+
+
+def _calendar_boundary(value: Any, *, field: str) -> datetime:
+    try:
+        return parse_utc_boundary(str(value))
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(f"{field} is invalid: {exc}") from exc
+
+
+def _calendar_mapping(value: Any, *, field: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ConfigurationError(f"{field} must be a JSON object")
+    return value
+
+
+def _calendar_source_ids(
+    value: Any,
+    *,
+    sources: Mapping[str, Mapping[str, Any]],
+    field: str,
+) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        raise ConfigurationError(f"{field} must cite at least one source")
+    source_ids = tuple(str(item) for item in value)
+    if len(source_ids) != len(set(source_ids)):
+        raise ConfigurationError(f"{field} contains duplicate source IDs")
+    missing = sorted(source_id for source_id in source_ids if source_id not in sources)
+    if missing:
+        raise ConfigurationError(f"{field} cites unknown sources: {missing}")
+    return source_ids
+
+
+def _load_holiday_calendar(
+    path: Path,
+    *,
+    symbol: str,
+    expected_start: datetime,
+    expected_end: datetime,
+) -> HolidayCalendarConfig:
+    """Load and fail-closed validate one versioned symbol holiday calendar."""
+
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
+    except DuplicateManifestKeyError as exc:
+        raise ConfigurationError(
+            f"holiday calendar {path} contains duplicate JSON key {exc.key!r}"
+        ) from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ConfigurationError(
+            f"cannot load holiday calendar {path}: {exc}"
+        ) from exc
+    calendar = _calendar_mapping(payload, field=f"holiday calendar {path}")
+    schema_version = calendar.get("calendar_schema_version")
+    if schema_version != 1:
+        raise ConfigurationError(
+            f"unsupported holiday calendar schema {schema_version!r}"
+        )
+    normalized_symbol = symbol.upper()
+    if calendar.get("symbol") != normalized_symbol:
+        raise ConfigurationError(
+            f"holiday calendar symbol {calendar.get('symbol')!r} does not "
+            f"match {normalized_symbol}"
+        )
+    calendar_id = str(calendar.get("calendar_id") or "")
+    if not calendar_id:
+        raise ConfigurationError("holiday calendar_id must be non-empty")
+    calendar_range = _calendar_mapping(
+        calendar.get("range"), field="holiday calendar.range"
+    )
+    start = _calendar_boundary(
+        calendar_range.get("start_inclusive"),
+        field="holiday calendar.range.start_inclusive",
+    )
+    end = _calendar_boundary(
+        calendar_range.get("end_exclusive"),
+        field="holiday calendar.range.end_exclusive",
+    )
+    if start >= end:
+        raise ConfigurationError("holiday calendar range must be increasing")
+    if (start, end) != (expected_start, expected_end):
+        raise ConfigurationError(
+            "holiday calendar range is incompatible with the configured range"
+        )
+
+    raw_sources = _calendar_mapping(
+        calendar.get("sources"), field="holiday calendar.sources"
+    )
+    if not raw_sources:
+        raise ConfigurationError("holiday calendar.sources cannot be empty")
+    sources: dict[str, Mapping[str, Any]] = {}
+    required_source_fields = (
+        "publisher",
+        "title",
+        "publication_date",
+        "url",
+        "applicable_timezone",
+        "support",
+    )
+    for raw_source_id, raw_source in raw_sources.items():
+        source_id = str(raw_source_id)
+        if not source_id:
+            raise ConfigurationError("holiday calendar source ID cannot be empty")
+        source = dict(
+            _calendar_mapping(
+                raw_source,
+                field=f"holiday calendar.sources.{source_id}",
+            )
+        )
+        for required_field in required_source_fields:
+            if not source.get(required_field):
+                raise ConfigurationError(
+                    f"holiday calendar source {source_id!r} lacks "
+                    f"{required_field}"
+                )
+        if not str(source["url"]).startswith("https://"):
+            raise ConfigurationError(
+                f"holiday calendar source {source_id!r} must use HTTPS"
+            )
+        sources[source_id] = source
+
+    policy = _calendar_mapping(
+        calendar.get("classification_policy"),
+        field="holiday calendar.classification_policy",
+    )
+    raw_confidences = policy.get("accepted_confidence_levels")
+    if not isinstance(raw_confidences, list) or not raw_confidences:
+        raise ConfigurationError(
+            "holiday calendar accepted_confidence_levels must be a non-empty list"
+        )
+    accepted_confidences = frozenset(str(value) for value in raw_confidences)
+    if (
+        len(accepted_confidences) != len(raw_confidences)
+        or not accepted_confidences <= _HOLIDAY_CONFIDENCE_LEVELS
+    ):
+        raise ConfigurationError(
+            "holiday calendar accepted confidence levels are invalid"
+        )
+
+    raw_intervals = calendar.get("event_intervals")
+    if not isinstance(raw_intervals, list):
+        raise ConfigurationError(
+            "holiday calendar.event_intervals must be a list"
+        )
+    seen_ids: set[str] = set()
+    intervals: list[HolidayClosureInterval] = []
+    for index, value in enumerate(raw_intervals):
+        if not isinstance(value, list) or len(value) != 7:
+            raise ConfigurationError(
+                f"holiday event interval {index} must contain seven fields"
+            )
+        (
+            raw_rule_id,
+            raw_event,
+            raw_rule_type,
+            raw_start,
+            raw_end,
+            raw_confidence,
+            raw_source_ids,
+        ) = value
+        rule_id = str(raw_rule_id)
+        if not rule_id:
+            raise ConfigurationError("holiday event rule_id cannot be empty")
+        if rule_id in seen_ids:
+            raise ConfigurationError(
+                f"duplicate holiday calendar event ID: {rule_id}"
+            )
+        seen_ids.add(rule_id)
+        rule_type = str(raw_rule_type)
+        if rule_type not in _HOLIDAY_CLOSURE_TYPES:
+            raise ConfigurationError(
+                f"unsupported holiday closure type for {rule_id}: {rule_type}"
+            )
+        event = str(raw_event)
+        if not event:
+            raise ConfigurationError(
+                f"holiday event label cannot be empty for {rule_id}"
+            )
+        interval_start = _calendar_boundary(
+            raw_start, field=f"holiday event {rule_id}.start_inclusive"
+        )
+        interval_end = _calendar_boundary(
+            raw_end, field=f"holiday event {rule_id}.end_exclusive"
+        )
+        if interval_start >= interval_end:
+            raise ConfigurationError(
+                f"holiday event interval is not increasing for {rule_id}"
+            )
+        if interval_start < start or interval_end > end:
+            raise ConfigurationError(
+                f"holiday event {rule_id} falls outside the calendar range"
+            )
+        confidence = str(raw_confidence)
+        if confidence not in _HOLIDAY_CONFIDENCE_LEVELS:
+            raise ConfigurationError(
+                f"holiday event confidence is invalid for {rule_id}"
+            )
+        source_ids = _calendar_source_ids(
+            raw_source_ids,
+            sources=sources,
+            field=f"holiday event {rule_id}.source_ids",
+        )
+        intervals.append(
+            HolidayClosureInterval(
+                rule_id=rule_id,
+                rule_type=rule_type,
+                event=event,
+                start_inclusive=interval_start,
+                end_exclusive=interval_end,
+                confidence=confidence,
+                source_ids=source_ids,
+            )
+        )
+    intervals.sort(key=lambda item: (item.start_inclusive, item.end_exclusive))
+    for left, right in zip(intervals, intervals[1:]):
+        if right.start_inclusive < left.end_exclusive:
+            raise ConfigurationError(
+                "overlapping contradictory holiday intervals: "
+                f"{left.rule_id}, {right.rule_id}"
+            )
+
+    raw_recurring = calendar.get("recurring_special_hours_rules")
+    if not isinstance(raw_recurring, list):
+        raise ConfigurationError(
+            "holiday calendar.recurring_special_hours_rules must be a list"
+        )
+    recurring_rules: list[RecurringHolidayClosureRule] = []
+    for index, value in enumerate(raw_recurring):
+        rule = _calendar_mapping(
+            value,
+            field=f"holiday recurring rule {index}",
+        )
+        rule_id = str(rule.get("rule_id") or "")
+        if not rule_id:
+            raise ConfigurationError(
+                "holiday recurring rule_id cannot be empty"
+            )
+        if rule_id in seen_ids:
+            raise ConfigurationError(
+                f"duplicate holiday calendar event ID: {rule_id}"
+            )
+        seen_ids.add(rule_id)
+        rule_type = str(rule.get("closure_type") or "")
+        if rule_type != "expected_special_hours_closure":
+            raise ConfigurationError(
+                f"unsupported recurring closure type for {rule_id}: "
+                f"{rule_type}"
+            )
+        event = str(rule.get("event") or "")
+        if not event:
+            raise ConfigurationError(
+                f"holiday recurring event label cannot be empty for {rule_id}"
+            )
+        timezone_name = str(rule.get("timezone") or "")
+        try:
+            ZoneInfo(timezone_name)
+        except (ValueError, ZoneInfoNotFoundError) as exc:
+            raise ConfigurationError(
+                f"holiday recurring rule {rule_id} has invalid timezone "
+                f"{timezone_name!r}"
+            ) from exc
+        raw_weekdays = rule.get("local_weekdays")
+        if (
+            not isinstance(raw_weekdays, list)
+            or not raw_weekdays
+            or any(
+                not isinstance(day, int)
+                or isinstance(day, bool)
+                or day not in range(7)
+                for day in raw_weekdays
+            )
+        ):
+            raise ConfigurationError(
+                f"holiday recurring rule {rule_id} has invalid weekdays"
+            )
+        local_weekdays = tuple(int(day) for day in raw_weekdays)
+        if len(local_weekdays) != len(set(local_weekdays)):
+            raise ConfigurationError(
+                f"holiday recurring rule {rule_id} has duplicate weekdays"
+            )
+        local_start = _parse_local_time(
+            rule.get("local_start"),
+            field=f"holiday recurring rule {rule_id}.local_start",
+        )
+        local_end = _parse_local_time(
+            rule.get("local_end"),
+            field=f"holiday recurring rule {rule_id}.local_end",
+        )
+        if (local_end - local_start) % (24 * 60) != 60:
+            raise ConfigurationError(
+                f"holiday recurring rule {rule_id} must span one hour"
+            )
+        confidence = str(rule.get("confidence") or "")
+        if confidence not in _HOLIDAY_CONFIDENCE_LEVELS:
+            raise ConfigurationError(
+                f"holiday recurring confidence is invalid for {rule_id}"
+            )
+        source_ids = _calendar_source_ids(
+            rule.get("source_ids"),
+            sources=sources,
+            field=f"holiday recurring rule {rule_id}.source_ids",
+        )
+        offset_condition = rule.get(
+            "only_when_europe_london_offset_differs", False
+        )
+        if not isinstance(offset_condition, bool):
+            raise ConfigurationError(
+                f"holiday recurring rule {rule_id} offset condition "
+                "must be boolean"
+            )
+        recurring_rules.append(
+            RecurringHolidayClosureRule(
+                rule_id=rule_id,
+                rule_type=rule_type,
+                event=event,
+                timezone_name=timezone_name,
+                local_weekdays=local_weekdays,
+                local_start_minutes=local_start,
+                local_end_minutes=local_end,
+                confidence=confidence,
+                source_ids=source_ids,
+                only_when_market_calendar_offset_differs=offset_condition,
+            )
+        )
+
+    return HolidayCalendarConfig(
+        path=path,
+        calendar_id=calendar_id,
+        schema_version=int(schema_version),
+        symbol=normalized_symbol,
+        start_inclusive=start,
+        end_exclusive=end,
+        accepted_confidence_levels=accepted_confidences,
+        sources=sources,
+        event_intervals=tuple(intervals),
+        recurring_rules=tuple(recurring_rules),
+    )
 
 
 def generate_partitions(start: datetime, end: datetime) -> list[Partition]:
@@ -320,6 +747,144 @@ def _cyclic_interval_contains(
     if start < end:
         return start <= value < end
     return value >= start or value < end
+
+
+def _holiday_rule_evidence(
+    config: PipelineConfig,
+    calendar: HolidayCalendarConfig,
+    *,
+    rule_id: str,
+    rule_type: str,
+    event: str,
+    start_inclusive: datetime,
+    end_exclusive: datetime,
+    confidence: str,
+    source_ids: tuple[str, ...],
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    sources = [
+        {
+            "source_id": source_id,
+            **dict(calendar.sources[source_id]),
+        }
+        for source_id in source_ids
+    ]
+    result: dict[str, Any] = {
+        "rule_id": rule_id,
+        "rule_type": rule_type,
+        "symbol": calendar.symbol,
+        "calendar_id": calendar.calendar_id,
+        "calendar_schema_version": calendar.schema_version,
+        "calendar_path": relative_repository_path(
+            calendar.path, config.repository_root
+        ),
+        "calendar_timezone": "UTC",
+        "utc_interval": {
+            "start_inclusive": format_utc(start_inclusive),
+            "end_exclusive": format_utc(end_exclusive),
+        },
+        "event": event,
+        "event_label": event,
+        "confidence": confidence,
+        "source_ids": list(source_ids),
+        "evidence_source_ids": list(source_ids),
+        "sources": sources,
+    }
+    if extra:
+        result.update(extra)
+    return result
+
+
+def _expected_holiday_closure_rule(
+    config: PipelineConfig,
+    *,
+    symbol: str,
+    timestamp: datetime,
+    market_rule: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    calendar = config.holiday_calendar(symbol)
+    if calendar is None:
+        return None
+    if not calendar.start_inclusive <= timestamp < calendar.end_exclusive:
+        return None
+    for interval in calendar.event_intervals:
+        if interval.confidence not in calendar.accepted_confidence_levels:
+            continue
+        if interval.start_inclusive <= timestamp < interval.end_exclusive:
+            return _holiday_rule_evidence(
+                config,
+                calendar,
+                rule_id=interval.rule_id,
+                rule_type=interval.rule_type,
+                event=interval.event,
+                start_inclusive=interval.start_inclusive,
+                end_exclusive=interval.end_exclusive,
+                confidence=interval.confidence,
+                source_ids=interval.source_ids,
+            )
+
+    market_timezone_name = str(market_rule["calendar_timezone"])
+    market_timezone = ZoneInfo(market_timezone_name)
+    market_local_start = timestamp.astimezone(market_timezone)
+    market_start_minutes = (
+        market_local_start.hour * 60 + market_local_start.minute
+    )
+    maintenance_start = _parse_local_time(
+        market_rule["maintenance_local_start"],
+        field=f"{symbol}.maintenance_local_start",
+    )
+    maintenance_weekdays = {
+        int(day) for day in market_rule["maintenance_local_weekdays"]
+    }
+    for recurring in calendar.recurring_rules:
+        if recurring.confidence not in calendar.accepted_confidence_levels:
+            continue
+        local_timezone = ZoneInfo(recurring.timezone_name)
+        local_start = timestamp.astimezone(local_timezone)
+        local_end = (timestamp + timedelta(hours=1)).astimezone(
+            local_timezone
+        )
+        actual_start = local_start.hour * 60 + local_start.minute
+        actual_end = local_end.hour * 60 + local_end.minute
+        if (
+            local_start.weekday() not in recurring.local_weekdays
+            or actual_start != recurring.local_start_minutes
+            or actual_end != recurring.local_end_minutes
+        ):
+            continue
+        if (
+            recurring.only_when_market_calendar_offset_differs
+            and market_local_start.weekday() in maintenance_weekdays
+            and market_start_minutes == maintenance_start
+        ):
+            continue
+        return _holiday_rule_evidence(
+            config,
+            calendar,
+            rule_id=recurring.rule_id,
+            rule_type=recurring.rule_type,
+            event=recurring.event,
+            start_inclusive=timestamp,
+            end_exclusive=timestamp + timedelta(hours=1),
+            confidence=recurring.confidence,
+            source_ids=recurring.source_ids,
+            extra={
+                "applicable_timezone": recurring.timezone_name,
+                "local_interval": (
+                    f"{recurring.local_start_minutes // 60:02d}:"
+                    f"{recurring.local_start_minutes % 60:02d}-"
+                    f"{recurring.local_end_minutes // 60:02d}:"
+                    f"{recurring.local_end_minutes % 60:02d}"
+                ),
+                "local_weekday": local_start.weekday(),
+                "local_partition_start": local_start.isoformat(),
+                "utc_offset_seconds": int(
+                    local_start.utcoffset().total_seconds()
+                ),
+                "market_calendar_timezone": market_timezone_name,
+            },
+        )
+    return None
 
 
 def expected_closure_rule(
@@ -438,7 +1003,12 @@ def expected_closure_rule(
             "utc_offset_seconds": int(local_start.utcoffset().total_seconds()),
             "source_url": str(rule["source_url"]),
         }
-    return None
+    return _expected_holiday_closure_rule(
+        config,
+        symbol=normalized_symbol,
+        timestamp=timestamp,
+        market_rule=rule,
+    )
 
 
 def is_expected_closure(

@@ -18,7 +18,7 @@ CALENDAR_PATH = (
     REPOSITORY_ROOT / "config" / "dukascopy_XAUUSD_holiday_calendar.json"
 )
 RANGE_START = parse_utc_boundary("2021-01-01T00:00:00Z")
-RANGE_END = parse_utc_boundary("2026-01-01T00:00:00Z")
+RANGE_END = parse_utc_boundary("2026-07-29T00:00:00Z")
 
 
 @pytest.fixture(scope="module")

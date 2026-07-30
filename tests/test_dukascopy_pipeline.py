@@ -21,6 +21,7 @@ from scripts.dukascopy_common import (
     StructuredLogger,
     atomic_write_bytes,
     decode_ticks,
+    expected_closure_rule,
     generate_partitions,
     inspect_bi5_payload,
     is_expected_closure,
@@ -829,8 +830,13 @@ def test_xauusd_daily_break_matches_only_summer_hour(config):
     ],
 )
 def test_xauusd_daily_break_follows_london_dst_boundaries(config, timestamp, expected):
-    assert is_expected_closure(
+    rule = expected_closure_rule(
         config, Partition(timestamp), symbol="XAUUSD"
+    )
+    assert (
+        rule is not None
+        and rule["rule_type"]
+        in {"symbol_daily_maintenance", "symbol_weekly_market_close"}
     ) is expected
 
 
@@ -856,10 +862,14 @@ def test_xauusd_daily_break_rule_does_not_apply_to_other_symbols(config):
     ],
 )
 def test_xauusd_weekly_market_boundaries(config, timestamp, closed):
-    assert is_expected_closure(
+    rule = expected_closure_rule(
         config,
         Partition(parse_utc_boundary(timestamp)),
         symbol="XAUUSD",
+    )
+    assert (
+        rule is not None
+        and rule["rule_type"] == "symbol_weekly_market_close"
     ) is closed
 
 
@@ -879,10 +889,14 @@ def test_xauusd_weekly_market_boundaries(config, timestamp, closed):
 def test_xauusd_weekly_calendar_follows_dst_transition_weekends(
     config, timestamp, closed
 ):
-    assert is_expected_closure(
+    rule = expected_closure_rule(
         config,
         Partition(parse_utc_boundary(timestamp)),
         symbol="XAUUSD",
+    )
+    assert (
+        rule is not None
+        and rule["rule_type"] == "symbol_weekly_market_close"
     ) is closed
 
 
@@ -1990,7 +2004,7 @@ def test_sunday_source_failures_remain_unresolved(
 
 
 def test_open_hour_empty_payload_remains_unresolved(tmp_path, config):
-    partition = Partition(datetime(2025, 2, 2, 22, tzinfo=UTC))
+    partition = Partition(datetime(2025, 2, 2, 23, tzinfo=UTC))
     manifest = Manifest(manifest_path(tmp_path), config=config, symbol="XAUUSD")
     manifest.record(
         partition,
@@ -2048,25 +2062,21 @@ def test_offline_reclassification_audit_groups_remaining_errors(tmp_path, config
     assert report["reconciliation"] == {
         "expected_partitions": 3,
         "verified": 0,
-        "expected_market_closures": 1,
+        "expected_market_closures": 2,
         "missing": 0,
         "corrupt": 0,
-        "unresolved": 2,
+        "unresolved": 1,
         "accounted_partitions": 3,
         "balanced": True,
     }
     assert audit["manifest_mutated"] is False
     assert audit["empty_payload_entries_evaluated"] == 2
-    assert audit["reclassified_from_unresolved_to_expected_market_closure"] == 1
+    assert audit["reclassified_from_unresolved_to_expected_market_closure"] == 2
     assert audit["remaining_unresolved_by_error_kind"] == {
-        "empty_payload_open_market": ["2025-02-02T22:00:00Z"],
         "http_5xx": ["2025-02-02T21:00:00Z"],
     }
     holiday_candidates = build_holiday_candidates_report(report)
-    assert holiday_candidates["count"] == 1
-    assert holiday_candidates["candidates"][0]["partition_timestamp"] == (
-        "2025-02-02T22:00:00Z"
-    )
+    assert holiday_candidates["count"] == 0
 
 
 def test_verifier_does_not_treat_a_silent_calendar_gap_as_closure(tmp_path, config):
