@@ -1,0 +1,49 @@
+event_name_raw,canonical,category,subcategory,agency,importance,release_type,mapping_status
+Advance Durable Goods,Core Durable Goods Orders,durable_goods,ex_transportation,U.S. Census Bureau,minor,initial,included
+Advance Durable Goods,Durable Goods Orders,durable_goods,headline,U.S. Census Bureau,minor,initial,included
+Advance International Trade in Goods,Advance Goods Trade Balance,trade,advance_goods,U.S. Census Bureau,minor,initial,included
+Advance Retail Sales,Core Retail Sales,consumption_retail_sales,ex_autos,U.S. Census Bureau,major,initial,included
+Advance Retail Sales,Retail Sales,consumption_retail_sales,headline,U.S. Census Bureau,major,initial,included
+Business Inventories,Business Inventories,business_inventories,total_business,U.S. Census Bureau,minor,initial,included
+Construction,Construction Spending,construction_spending,value_of_construction,U.S. Census Bureau,minor,initial,included
+Consumer Confidence,Consumer Confidence,sentiment_consumer,conference_board,The Conference Board,minor,initial,included
+Consumer Price Index,CPI,inflation_cpi,headline,U.S. Bureau of Labor Statistics,major,initial,included
+Consumer Price Index,Core CPI,inflation_cpi,core,U.S. Bureau of Labor Statistics,major,initial,included
+Empire State Manufacturing Survey,Empire State Manufacturing,regional_manufacturing,empire_state,Federal Reserve Bank of New York,minor,initial,included
+Employment Cost Index,Employment Cost Index,labor_compensation,eci,U.S. Bureau of Labor Statistics,minor,initial,included
+Employment Situation,Average Hourly Earnings,labor_wages,average_hourly_earnings,U.S. Bureau of Labor Statistics,major,initial,included
+Employment Situation,Nonfarm Payrolls,labor_payrolls,establishment_employment,U.S. Bureau of Labor Statistics,major,initial,included
+Employment Situation,Unemployment Rate,labor_unemployment,household_unemployment,U.S. Bureau of Labor Statistics,major,initial,included
+Gross Domestic Product 1st Release,GDP,growth_gdp,real_gdp,U.S. Bureau of Economic Analysis,major,advance,included
+Gross Domestic Product 2nd Release,GDP,growth_gdp,real_gdp,U.S. Bureau of Economic Analysis,major,second_estimate,included
+Gross Domestic Product 3rd Release,GDP,growth_gdp,real_gdp,U.S. Bureau of Economic Analysis,major,third_estimate,included
+ISM Manufacturing,ISM Manufacturing,manufacturing_ism,headline,Institute for Supply Management,major,initial,included
+ISM Non-Manufacturing,ISM Services,services_ism,headline,Institute for Supply Management,major,initial,included
+Imports and Exports,Export Prices,trade_prices,exports,U.S. Bureau of Labor Statistics,minor,initial,included
+Imports and Exports,Import Prices,trade_prices,imports,U.S. Bureau of Labor Statistics,minor,initial,included
+Industrial Production and Capacity Utilization,Capacity Utilization,industrial_production,capacity_utilization,Federal Reserve Board,minor,initial,included
+Industrial Production and Capacity Utilization,Industrial Production,industrial_production,production,Federal Reserve Board,minor,initial,included
+JOLTS,JOLTS,labor_jolts,job_openings,U.S. Bureau of Labor Statistics,major,initial,included
+"Manufacturing, Shipments, and Orders",Factory Orders,factory_orders,manufacturers_orders,U.S. Census Bureau,minor,initial,included
+Michigan Consumer Survey (Final),University of Michigan Sentiment (Final),sentiment_consumer,michigan_final,University of Michigan Surveys of Consumers,minor,final,included
+Michigan Consumer Survey (Preliminary),University of Michigan Sentiment (Preliminary),sentiment_consumer,michigan_preliminary,University of Michigan Surveys of Consumers,minor,preliminary,included
+NAR Existing Home Sales,Existing Home Sales,housing_sales,existing_homes,National Association of Realtors,minor,initial,included
+New Residential Construction,Building Permits,housing_starts,permits,U.S. Census Bureau / HUD,minor,initial,included
+New Residential Construction,Housing Starts,housing_starts,starts,U.S. Census Bureau / HUD,minor,initial,included
+New Residential Sales,New Home Sales,housing_sales,new_homes,U.S. Census Bureau / HUD,minor,initial,included
+Personal Income and the PCE Deflator,Core PCE Price Index,inflation_pce,core,U.S. Bureau of Economic Analysis,major,initial,included
+Personal Income and the PCE Deflator,PCE Price Index,inflation_pce,headline,U.S. Bureau of Economic Analysis,major,initial,included
+Personal Income and the PCE Deflator,Personal Income,personal_income,personal_income,U.S. Bureau of Economic Analysis,minor,initial,included
+Personal Income and the PCE Deflator,Personal Spending,personal_spending,personal_consumption_expenditures,U.S. Bureau of Economic Analysis,minor,initial,included
+Philadelphia Fed Manufacturing Survey,Philadelphia Fed Manufacturing,regional_manufacturing,philadelphia_fed,Federal Reserve Bank of Philadelphia,minor,initial,included
+Producer Price Index (PPI),Core PPI,inflation_ppi,core,U.S. Bureau of Labor Statistics,major,initial,included
+Producer Price Index (PPI),PPI,inflation_ppi,headline,U.S. Bureau of Labor Statistics,major,initial,included
+Productivity & Costs (Preliminary),Productivity,productivity,nonfarm_productivity,U.S. Bureau of Labor Statistics,minor,preliminary,included
+Productivity & Costs (Preliminary),Unit Labor Costs,productivity,unit_labor_costs,U.S. Bureau of Labor Statistics,minor,preliminary,included
+Productivity & Costs (Revised),Productivity,productivity,nonfarm_productivity,U.S. Bureau of Labor Statistics,minor,revised,included
+Productivity & Costs (Revised),Unit Labor Costs,productivity,unit_labor_costs,U.S. Bureau of Labor Statistics,minor,revised,included
+S&P Global U.S. PMI,S&P Global U.S. PMI,pmi_private,composite_manufacturing_services,S&P Global,minor,preliminary_or_final,excluded_source_unusable
+Trade balance,Trade Balance,trade,goods_and_services,U.S. Census Bureau and U.S. Bureau of Economic Analysis,minor,initial,included
+Unemployment Insurance Weekly Claims Report,Continuing Claims,labor_claims,continuing_claims,U.S. Department of Labor,minor,initial,included
+Unemployment Insurance Weekly Claims Report,Initial Jobless Claims,labor_claims,initial_claims,U.S. Department of Labor,minor,initial,included
+Wholesale Trade,Wholesale Inventories,wholesale_inventories,merchant_wholesalers,U.S. Census Bureau,minor,initial,included

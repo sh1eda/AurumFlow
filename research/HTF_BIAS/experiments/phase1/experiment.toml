@@ -1,0 +1,36 @@
+[experiment]
+id = "HTF_BIAS_PHASE1"
+research_object = "HTF_BIAS"
+title = "Higher Timeframe Bias Phase 1"
+version = "1.0.0"
+entry_point = "research.HTF_BIAS.experiment:run"
+output_namespace = "phase1"
+hypothesis = "Do objectively measurable higher-timeframe context variables provide information about subsequent intraday XAUUSD behavior beyond unconditional timing, weekday, news-timing, and prior-momentum baselines?"
+measurable_definition = "At 08:30 and 09:30 America/New_York, calculate only timestamp-available daily, weekly, Monday, confirmed-swing, displacement, premium/discount, and external-level context; compare A-E independently against neutral forward market outcomes under chronological development, validation, and untouched holdout partitions."
+required_data = [
+  "Validated canonical one-minute XAUUSD bid/ask OHLC with observed spread summaries",
+  "Validated IANA broker-time mapping and canonical UTC timestamps",
+  "Official-source timing-only U.S. economic calendar classifications",
+]
+success_criteria = [
+  "At least one frozen candidate has non-trivial standalone and incremental validation and holdout evidence with uncertainty bounds, direction symmetry, temporal consistency, and at least 70% positive adequate robustness strata",
+  "Every feature availability timestamp is at or before its evaluation timestamp",
+]
+failure_criteria = [
+  "Adequate validation and holdout evidence is non-positive or unstable for all registered definitions",
+  "Any future-information, boundary, duplicate, timezone, holdout-isolation, or deterministic-output control fails",
+]
+validation_method = "Chronological whole-session 50/25/25 development/validation/final-holdout evaluation with session-cluster bootstrap confidence intervals, frozen baseline/composite definitions, preregistered sensitivities, and explicit one-year confidence cap."
+known_limitations = [
+  "Only one year of the validated one-minute bid/ask source is available",
+  "Broker timezone mapping is strongly supported empirically but not broker-documented",
+  "Official calendar supports timing and category context but not actual/consensus surprise analysis",
+  "Spot XAUUSD is broker-specific and is not a consolidated tape",
+]
+
+[parameters]
+data_source = "validated_event_study_csv"
+market_dataset = "normalized/XAUUSD_202507171300_202607171409.1m_bidask.csv"
+calendar_dataset = "calendar/us_trading_day_classification.csv"
+evaluation_clocks = ["08:30", "09:30"]
+bootstrap_resamples = 2000

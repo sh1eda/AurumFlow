@@ -1,0 +1,9 @@
+[object]
+id = "SESSION_STRUCTURE"
+title = "Session Structure"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 04"
+layer = 4
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Evaluate whether objectively measurable session characteristics persist and contribute information."

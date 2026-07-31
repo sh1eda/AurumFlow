@@ -1,0 +1,38 @@
+[experiment]
+id = "LIQUIDITY_PHASE1"
+research_object = "LIQUIDITY"
+title = "Liquidity Research Phase 1"
+version = "1.0.0"
+entry_point = "research.LIQUIDITY.experiment:run"
+output_namespace = "phase1"
+hypothesis = "Do objectively known historical XAUUSD price levels and timestamp-available interaction states contain incremental information about subsequent intraday reach, path, volatility, or neutral movement beyond distance, time, volatility, weekday, evaluation clock, and official timing-only news baselines?"
+measurable_definition = "At 08:30 and 09:30 America/New_York and after timestamp-safe approach/touch/exceed/close/reclaim/move-away events, evaluate previous-day, previous-week, forming/completed Monday, confirmed 4H/daily swing, and equal-high/low level families independently against neutral outcomes and matched controls under chronological development, validation, and final-holdout partitions."
+required_data = [
+  "Validated canonical one-minute XAUUSD bid/ask OHLC with observed spread summaries",
+  "Validated IANA broker-time mapping and canonical UTC timestamps",
+  "Official-source timing-only U.S. economic calendar classifications",
+]
+success_criteria = [
+  "At least one family/state has at least 3 percentage points of paired 60-minute reach lift, positive conditional residual, session-cluster bootstrap bounds above zero, adequate validation and holdout samples, temporal agreement, and at least 70% robustness consistency",
+  "Every level, state, and interaction is available no later than its observation timestamp",
+]
+failure_criteria = [
+  "Every tested family has adequate validation/holdout breadth but fails incremental, uncertainty, temporal, and robustness gates",
+  "Any level availability, confirmation-delay, state timestamp, holdout-isolation, duplicate, timezone, or deterministic-output control fails",
+]
+validation_method = "Two complementary fixed-anchor and interaction-event studies with chronological whole-session 50/25/25 development/validation/final-holdout partitions, session-cluster bootstrap confidence intervals, development-frozen conditional baselines, paired synthetic controls, preregistered sensitivity sets, and an explicit two-year confidence cap."
+known_limitations = [
+  "Only approximately one year of the validated one-minute bid/ask source is available",
+  "Broker timezone mapping is strongly supported empirically but not broker-documented",
+  "Official calendar supports timing/category context but not actual/consensus surprise analysis",
+  "Spot XAUUSD is broker-specific and is not a consolidated tape",
+  "Some lifecycle sensitivities require separate full-history reconstruction and are registered rather than estimated by revising primary labels",
+]
+
+[parameters]
+data_source = "validated_event_study_csv"
+market_dataset = "normalized/XAUUSD_202507171300_202607171409.1m_bidask.csv"
+calendar_dataset = "calendar/us_trading_day_classification.csv"
+evaluation_clocks = ["08:30", "09:30"]
+bootstrap_resamples = 2000
+event_cooldown_minutes = 30

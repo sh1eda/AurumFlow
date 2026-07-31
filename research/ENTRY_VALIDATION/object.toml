@@ -1,0 +1,9 @@
+[object]
+id = "ENTRY_VALIDATION"
+title = "Entry Validation"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 08"
+layer = 7
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Provide an isolated research home for future comparison of candidate entry-validation families."

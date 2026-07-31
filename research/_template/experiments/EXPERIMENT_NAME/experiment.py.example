@@ -1,0 +1,8 @@
+"""Copy this file to experiment.py and implement only the registered question."""
+
+from aurumflow_research import ExperimentResult, ResearchDecision
+from aurumflow_research.runner import ExperimentContext
+
+
+def run(context: ExperimentContext) -> ExperimentResult:
+    raise NotImplementedError("Implement the isolated, preregistered experiment")

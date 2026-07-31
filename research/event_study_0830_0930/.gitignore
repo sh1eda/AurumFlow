@@ -1,0 +1,12 @@
+# Licensed/raw empirical inputs and normalized derivatives stay local.
+external_data/raw/
+external_data/normalized/
+external_data/quality/
+external_data/calendar/
+outputs/
+*.local.yaml
+*.local.yml
+*.local.json
+
+# Required no-data gate deliverable; generated run reports stay under ignored paths.
+!data_quality_report.json

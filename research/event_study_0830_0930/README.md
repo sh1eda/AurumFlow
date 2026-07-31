@@ -12,7 +12,7 @@ The mandatory source gate is documented in:
 - `research_limitations.md`
 - `research_gate_assessment.md`
 
-The six tests in `tests/test_framework.py` use synthetic fixtures only. They verify framework mechanics, causal timing and output contracts; they are not empirical validation of an XAUUSD trading edge.
+All tests in this directory use synthetic fixtures only. They verify framework mechanics, adapters, validation, causal timing and output contracts; they are not empirical validation of an XAUUSD trading edge.
 
 ## Environment setup
 
@@ -28,7 +28,7 @@ Run the standard repository suite, including the isolated research tests:
 python -m pytest
 ```
 
-Run only the six synthetic event-study tests:
+Run only the synthetic event-study tests:
 
 ```bash
 python -m pytest research/event_study_0830_0930/tests
@@ -40,9 +40,23 @@ Regenerate the two curated research registers using only the Python standard lib
 python research/event_study_0830_0930/tools/build_research_registers.py
 ```
 
+## Empirical-data integration
+
+The bid/ask ingestion and Stage 1 pipeline is documented in:
+
+- [data schema](data_schema.md)
+- [external data setup](external_data_setup.md)
+- [empirical runbook](empirical_runbook.md)
+- [sample configuration](sample_config.yaml)
+- [current blocked quality report](data_quality_report.md)
+
+Source adapters support MT5, Dukascopy, generic CSV, explicitly mapped broker CSV and Parquet. Tick inputs are aggregated into independent bid and ask one-minute bars without forward filling. Economic releases are normalized, point-in-time eligibility is recorded, and simultaneous releases are clustered before attribution.
+
+The executable empirical commands live in `empirical_cli.py`. Stage 1 refuses critical quality failures and measures timing, volatility and spread only; it does not test entry geometry.
+
 ## Input contract
 
-Price CSV:
+The legacy research-core price CSV contract is:
 
 - `timestamp` (or `datetime`, `time`, `date_time`)
 - `open`, `high`, `low`, `close`
@@ -58,6 +72,8 @@ Calendar CSV:
 - the calendar must be point-in-time; a currently displayed official schedule is not a substitute for historical surprise vintages
 
 All analysis converts timestamps to IANA `America/New_York`. No fixed UTC offset is used. London primary ranges use `Europe/London` local 08:00–12:00, so the U.S./U.K. DST mismatch is handled automatically.
+
+New empirical runs must first use the canonical bid/ask schemas in `data_schema.md`; single-price bars remain suitable only for synthetic framework tests, not executable empirical inference.
 
 ## Run
 
@@ -91,11 +107,38 @@ The registered higher-timeframe proxy is the sign of the return from the prior f
 
 For OHLC execution, the primary OTE-zone proxy is the first touch of the proximal 62% boundary of the registered 62%–79% band; it is intentionally identical to the standalone 62% entry when there is no inter-bar gap. A separate 70.5% sensitivity is emitted. Tick replay is required to resolve a gap directly into the interior of the zone.
 
-## Current repository data
+## Current local data qualification
 
-`data/local/XAUUSDM15.utc.csv` is intentionally rejected. Its 15-minute resolution cannot answer the 08:30–08:35, one-/three-minute structure, five-minute heatmap, intrabar fill-order or event-cost questions. See `research_limitations.md` for the complete data gap.
+The original M15 file remains intentionally rejected for this event study. A separate local MT5 tick export, `data/local/XAUUSD_202507171300_202607171409.csv`, has now passed the structural normalization gate through the isolated streaming workflow in `tick_qualification.py`. The raw export and its normalized derivatives remain ignored and are not distributable repository assets.
 
-The empirical study was therefore not run. Refusing to upsample or infer first-minute paths from the available M15 file is a deliberate data-integrity decision, not a negative result.
+Qualification outputs are:
+
+- `tick_inspection.md`
+- `tick_validation_report.md`
+- `tick_metadata.json`
+- ignored canonical ticks under `external_data/normalized/`
+- ignored one-minute bid/ask bars under `external_data/normalized/`
+
+The data verdict is `WARNING`, not `READY`: the file contains no timezone marker, and the `Europe/Helsinki` broker-server mapping remains an inference pending broker confirmation. Extreme and zero-spread states also require explicit cost sensitivity. The empirical study was **not** run; a point-in-time historical U.S. release calendar is still missing.
+
+Re-run qualification in three explicit phases:
+
+```bash
+python -m research.event_study_0830_0930.tick_qualification validate \
+  --input data/local/XAUUSD_202507171300_202607171409.csv \
+  --output-dir research/event_study_0830_0930 \
+  --source-timezone Europe/Helsinki \
+  --timezone-status assumed
+
+python -m research.event_study_0830_0930.tick_qualification normalize \
+  --input data/local/XAUUSD_202507171300_202607171409.csv \
+  --output-dir research/event_study_0830_0930 \
+  --normalized-dir research/event_study_0830_0930/external_data/normalized \
+  --source-timezone Europe/Helsinki
+
+python -m research.event_study_0830_0930.tick_qualification verify \
+  --output-dir research/event_study_0830_0930
+```
 
 ## Required external datasets and next phase
 

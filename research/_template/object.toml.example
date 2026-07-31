@@ -1,0 +1,9 @@
+[object]
+id = "NEW_OBJECT"
+title = "New Research Object"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object NN"
+layer = 0
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "State the neutral research objective."

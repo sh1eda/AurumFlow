@@ -1,0 +1,73 @@
+version = 1
+
+[source]
+id = "dukascopy-public-bi5"
+base_url = "https://datafeed.dukascopy.com/datafeed"
+url_template = "{base_url}/{archive_symbol}/{year:04d}/{month_zero:02d}/{day:02d}/{hour:02d}h_ticks.bi5"
+partition = "hour"
+timezone = "UTC"
+record_format = ">IIIff"
+record_size_bytes = 20
+
+[symbols.XAUUSD]
+archive_symbol = "XAUUSD"
+price_scale = 1000
+
+[paths]
+raw_root = "data/raw/dukascopy"
+processed_root = "data/processed/dukascopy"
+manifests_root = "data/manifests"
+reports_root = "data/reports"
+logs_root = "data/logs/dukascopy"
+
+[download]
+timeout_seconds = 30.0
+max_attempts = 4
+retry_backoff_seconds = [15.0, 60.0, 300.0]
+request_delay_seconds = 2.0
+circuit_breaker_threshold = 5
+circuit_breaker_pause_seconds = 900.0
+proxy_rotate_after_failures = 2
+proxy_cooldown_seconds = 300.0
+max_compressed_bytes = 104857600
+user_agent = "AurumFlow-D001/1.0 (+research data acquisition)"
+
+[partition_rules]
+start_inclusive = true
+end_exclusive = true
+closure_timezone = "UTC"
+# Legacy UTC rules remain available for explicitly configured instruments or
+# dates. XAUUSD uses the single symbol calendar below instead.
+full_day_closed_weekdays = []
+explicit_closed_dates = []
+closed_utc_hours_by_weekday = {}
+
+[partition_rules.symbol_market_calendars.XAUUSD]
+# Dukascopy publishes Sunday-Friday market hours and the XAU/USD maintenance
+# break one UTC hour earlier during summer time than winter time. Expressing all
+# boundaries in Europe/London delegates both ordinary and transition weeks to
+# the IANA timezone database instead of hard-coding seasonal UTC dates.
+calendar_timezone = "Europe/London"
+weekly_close_local_weekday = 4
+weekly_close_local_time = "22:00"
+weekly_reopen_local_weekday = 6
+weekly_reopen_local_time = "22:00"
+maintenance_local_start = "22:00"
+maintenance_local_end = "23:00"
+maintenance_local_weekdays = [0, 1, 2, 3, 4]
+source_url = "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/link/"
+source_description = "Dukascopy market hours: Sunday-Friday 21:00 UTC summer / 22:00 UTC winter; XAU/USD break: 21:00-22:00 UTC summer / 22:00-23:00 UTC winter"
+holiday_calendar_path = "config/dukascopy_XAUUSD_holiday_calendar.json"
+holiday_calendar_range_start_inclusive = "2021-01-01T00:00:00Z"
+holiday_calendar_range_end_exclusive = "2026-07-29T00:00:00Z"
+
+[validation]
+max_spread_absolute = 5.0
+large_tick_gap_seconds = 300.0
+
+[canonical]
+format = "parquet"
+compression = "zstd"
+partition_by = "date"
+parquet_version = "2.6"
+row_group_size = 250000

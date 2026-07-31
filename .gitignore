@@ -60,6 +60,7 @@ paper-ledger*.jsonl
 # Generated reports and exports
 reports/
 generated_reports/
+research_outputs/
 exports/
 XAUUSD_Trading_AI_Paper.*
 XAUUSD_Trading_AI_Technical_Whitepaper.*
@@ -80,9 +81,23 @@ feature_importance*.csv
 !tests/fixtures/**/*.tsv
 !research/event_study_0830_0930/source_register.csv
 !research/event_study_0830_0930/nasdaq_to_xauusd_transfer_matrix.csv
+!research/event_study_0830_0930/calendar_source_register.csv
+!research/event_study_0830_0930/event_name_mapping.csv
+!research/event_study_0830_0930/calendar_quality_report.json
 
 # Large datasets and local research sources
-data/
+data/local/
+data/**
+!data/raw/
+!data/raw/dukascopy/
+!data/raw/dukascopy/.gitkeep
+!data/processed/
+!data/processed/dukascopy/
+!data/processed/dukascopy/.gitkeep
+!data/manifests/
+!data/manifests/.gitkeep
+!data/reports/
+!data/reports/.gitkeep
 datasets/
 market_data/
 raw_data/
@@ -93,6 +108,7 @@ docs/raw_sources/
 *.arrow
 *.h5
 *.hdf5
+proxies.txt
 
 # Model artifacts
 models/

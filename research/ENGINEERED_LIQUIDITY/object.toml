@@ -1,0 +1,9 @@
+[object]
+id = "ENGINEERED_LIQUIDITY"
+title = "Engineered Liquidity"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 05"
+layer = 5
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Evaluate whether candidate engineered-liquidity observations are objectively detectable and informative."

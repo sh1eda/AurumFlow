@@ -2,21 +2,23 @@
 
 ## Current Status
 
-The approved RULE_ONLY-first implementation is in place. The system now has an offline Python package, CLI entrypoint, causal data layer, deterministic SMC/ICT event primitives, rule-only signal generation, closed-bar backtesting, chronological walk-forward reporting, file-backed paper ledger, and manifest-backed model adapter readiness.
+The approved RULE_ONLY-first implementation is in place. The system now has an offline Python package, CLI entrypoint, strict source-data validation and UTC normalization, a causal data layer, deterministic SMC/ICT event primitives, rule-only signal generation, an explicit pending-entry lifecycle, bounded closed-bar backtesting, rule-funnel diagnostics, chronological walk-forward reporting, file-backed paper ledger, and manifest-backed model adapter readiness. A local MT5 XAUUSD M15 export has been validated and measured in the real-data reports; the market file remains ignored.
 
 No real-money execution has been implemented. The only real-order function intentionally raises a hard error.
 
 ## Implemented Modules
 
-- `xauusd_signal/types.py`: canonical enums, signal schema, model prediction schema, rejection codes, and validation statuses.
-- `xauusd_signal/data.py`: OHLCV CSV loader, timezone-aware timestamps, `closed_at` handling, resampling, and causal higher-timeframe joins.
+- `xauusd_signal/types.py`: canonical enums, signal schema, entry lifecycle states/outcomes, model prediction schema, rejection codes, and validation statuses.
+- `xauusd_signal/data.py`: strict OHLCV CSV loader, explicit source-timezone handling, `closed_at` handling, resampling, and causal higher-timeframe joins.
+- `xauusd_signal/data_quality.py`: schema, timezone, OHLC, duplicate, ordering, frequency-gap, weekend, history-length, and volume validation.
 - `xauusd_signal/events.py`: swing highs/lows, FVG creation, FVG fill status, IFVG close-through events, time-liquidity levels, liquidity raids, and MSS body-close events.
 - `xauusd_signal/strategy.py`: RULE_ONLY, HYBRID_RESEARCH, and HYBRID_VALIDATED mode handling; `SweepMssFvgRetraceLong`; `SweepMssFvgRetraceShort`; stop, target, confidence, and rejection logic.
-- `xauusd_signal/backtest.py`: closed-bar replay simulator with next-bar entry search, conservative stop-before-target handling, spread/slippage/commission costs, missed-entry logging, and rejection aggregation.
+- `xauusd_signal/backtest.py`: closed-bar replay simulator with next-bar-first pending limits, bounded expiration, pre-entry invalidation, conservative ambiguity handling, outcome records, spread/slippage/commission costs, and rejection aggregation.
+- `xauusd_signal/diagnostics.py`: LONG, SHORT, and combined rule funnels with stage survival percentages and ranked rejection/outcome codes.
 - `xauusd_signal/validation.py`: chronological split generation, RULE_ONLY walk-forward baseline reporting, and HYBRID_VALIDATED approval gate.
 - `xauusd_signal/paper.py`: JSONL file-backed paper ledger and hard-blocked real-order function.
 - `xauusd_signal/models.py`: manifest-backed model adapter, feature hashing, feature-order enforcement, class-semantics checks, and `UNAVAILABLE` behavior for missing or invalid artifacts.
-- `xauusd_signal/cli.py`: command-line commands for signal generation, backtests, validation, and paper-ledger recording.
+- `xauusd_signal/cli.py`: commands for data checks, signal generation, period-sliced backtests and diagnostics, validation, and paper-ledger recording.
 
 ## Operating Modes
 
@@ -43,10 +45,12 @@ If trade count or fold count is insufficient, status remains `INSUFFICIENT_EVIDE
 
 ## Verification Completed
 
-Last implementation verification:
+Latest implementation verification:
 
-- `python3 -m pytest`: 21 tests passed.
+- `python3 -m pytest`: 49 tests passed.
 - `python3 -m compileall xauusd_signal tests`: passed.
+- `git diff --check`: passed.
+- Relative Markdown links and code fences: passed local validation.
 - Configured lint/type checks: none found beyond `pyproject.toml` pytest configuration.
 
 Covered test areas:
@@ -60,6 +64,12 @@ Covered test areas:
 - HYBRID_RESEARCH does not block rule signals.
 - HYBRID_VALIDATED rejects unverified ML.
 - Backtest next-bar entry handling.
+- Pending-order activation, finite expiration, right-censored entries, and pre-entry invalidation.
+- Causal target availability based on swing `detected_at`.
+- LONG/SHORT/combined funnel counts, percentages, CLI formats, and deterministic replay.
+- Optimized event primitives match reference algorithms, and cached
+  full-history signal evaluation matches causal prefix replay in both directions.
+- Naive timestamp rejection, explicit timezone normalization, duplicate/ordering/OHLC checks, gap reporting, guarded normalized output, and local-data ignore coverage.
 - Conservative stop-before-target same-bar behavior.
 - After-cost time-exit R calculation.
 - Walk-forward evidence gate.
@@ -112,27 +122,46 @@ Paper ledger:
 python3 -m xauusd_signal paper --csv 15m_data.csv --mode RULE_ONLY --htf-bias BULLISH --bars 200 --ledger /private/tmp/xauusd-paper-ledger.jsonl
 ```
 
+Rule funnel diagnostics:
+
+```bash
+python3 -m xauusd_signal diagnose --csv 15m_data.csv --mode RULE_ONLY --htf-bias BULLISH --bars 5000
+```
+
+Data-quality validation:
+
+```bash
+python3 -m xauusd_signal data-check --csv data/local/xauusd_15m.csv --source-timezone UTC --format json
+```
+
 ## Look-Ahead And Fill Review
 
 - Signal evaluation uses data through the current closed candle only.
 - FVGs become available only after the third candle closes.
 - Swing points are detected only after the right candle closes.
 - Higher-timeframe joins use `closed_at` with backward `merge_asof`.
-- Backtest entry search begins after the signal bar.
+- A setup activates only when the new post-MSS FVG and every hard gate are causally known.
+- Backtest entry evaluation begins after the activation bar and ends after the configured maximum wait.
+- Swing targets are filtered by `detected_at <= order_activation_at`.
+- Same-bar entry/invalidation ambiguity resolves to invalidation.
 - Stop and target touched in the same bar are resolved stop-first unless lower-timeframe sequencing is later added.
 - Spread, slippage, and commission are applied to all exits, including time exits.
 
 ## Remaining Limitations
 
 - Physical ML model binaries are still unavailable in the visible checkout; model predictions remain `UNAVAILABLE`.
+- No real XAUUSD market dataset is committed. The measured local source has an
+  unknown broker and quote type, an inferred timezone, and no usable spread
+  values for broker cost calibration.
+- Fixed-bias real-data runs identify minimum R:R as the dominant funnel
+  reduction, but only 25 LONG and 28 SHORT trades close in independent views.
 - HYBRID_VALIDATED is not enabled and must remain disabled until the approval gate is satisfied.
 - HTF bias is passed explicitly through CLI/config; automated HTF draw selection is not implemented yet.
 - Session calendar handling is basic; time-liquidity levels support configurable timezone grouping but not full venue/session rules.
 - The v1 setup templates are intentionally narrow and may produce very few or zero trades on short samples.
 - TP2 uses nearest post-MSS opposing swing liquidity; richer liquidity taxonomies, equal-high/equal-low clustering, and session liquidity are not yet validated.
 - No broker integration exists.
-- No live/paper fill lifecycle beyond file-backed signal recording is implemented.
-- Existing repository Git state contains pre-existing staged deletions and same-path untracked files; that state was not modified or repaired during implementation.
+- Paper mode still records signals only; the full pending-order lifecycle is implemented in backtests, not as a broker or paper execution engine.
 
 ## Documentation Synchronization
 

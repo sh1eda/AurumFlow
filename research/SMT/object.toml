@@ -1,0 +1,9 @@
+[object]
+id = "SMT"
+title = "SMT Divergence"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 06"
+layer = 6
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Evaluate whether intermarket divergences can be defined objectively and distinguished from random divergence."

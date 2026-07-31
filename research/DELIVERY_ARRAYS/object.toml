@@ -1,0 +1,9 @@
+[object]
+id = "DELIVERY_ARRAYS"
+title = "Delivery Arrays"
+version = "0.1.0"
+catalog_reference = "RESEARCH_CATALOG object 03"
+layer = 7
+lifecycle = "candidate_definition"
+decision = "not_evaluated"
+objective = "Evaluate candidate delivery-array objects using objective and isolated empirical definitions."

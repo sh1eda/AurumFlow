@@ -31,7 +31,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
+    "httpx[http2]>=0.27",
     "pandas>=2.0",
+    "pyarrow>=14.0",
 ]
 
 [project.optional-dependencies]
@@ -42,9 +44,10 @@ dev = [
 [project.scripts]
 aurumflow = "xauusd_signal.cli:main"
 xauusd-signal = "xauusd_signal.cli:main"
+aurumflow-research = "aurumflow_research.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["xauusd_signal*"]
+include = ["xauusd_signal*", "aurumflow_research*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "research/event_study_0830_0930/tests"]
