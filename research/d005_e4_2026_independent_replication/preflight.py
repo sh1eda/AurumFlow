@@ -10,11 +10,15 @@ import subprocess
 from typing import Any
 
 from .config import (
+    FROZEN_ANCHOR_RULE_HASHES,
     FROZEN_HISTORICAL_HASHES,
     ArtifactRequirement,
     IndependentReplication2026Config,
     artifact_requirements,
 )
+
+
+EXPECTED_2026_PARQUET_FILES = 178
 
 
 def sha256_file(path: Path) -> str:
@@ -314,6 +318,143 @@ def verify_release_integrity(repository_root: Path) -> dict[str, Any]:
     }
 
 
+def verify_2026_parquet_contents(repository_root: Path) -> dict[str, Any]:
+    """Byte-verify the exact registered 2026 file set without decoding rows."""
+
+    root = repository_root.resolve()
+    canonical_root = root / "data/canonical/xauusd_ticks_d003-v2"
+    year_root = canonical_root / "year=2026"
+    checksum_path = root / "data/releases/d003-v2/parquet_sha256.txt"
+    canonical_manifest_path = canonical_root / "canonical_manifest.json"
+    errors: list[str] = []
+    checksum_manifest_sha256 = (
+        sha256_file(checksum_path) if checksum_path.is_file() else None
+    )
+    registered: dict[str, str] = {}
+    sizes: dict[str, int] = {}
+    try:
+        if not checksum_path.is_file():
+            raise ValueError(f"missing checksum manifest: {checksum_path}")
+        if not canonical_manifest_path.is_file():
+            raise ValueError(
+                f"missing canonical manifest: {canonical_manifest_path}"
+            )
+        all_checksums = _parse_checksum_manifest(checksum_path)
+        registered = {
+            relative: checksum
+            for relative, checksum in all_checksums.items()
+            if "year=2026" in PurePosixPath(relative).parts
+        }
+        canonical = _strict_json(canonical_manifest_path)
+        records = canonical.get("files")
+        if not isinstance(records, list):
+            raise ValueError("canonical files field is not a list")
+        for index, record in enumerate(records):
+            if not isinstance(record, dict):
+                raise ValueError(
+                    f"invalid canonical file record at index {index}"
+                )
+            relative = record.get("path")
+            if (
+                isinstance(relative, str)
+                and "year=2026" in PurePosixPath(relative).parts
+            ):
+                byte_size = record.get("byte_size")
+                checksum = record.get("sha256")
+                if not isinstance(byte_size, int) or checksum != registered.get(
+                    relative
+                ):
+                    raise ValueError(
+                        "2026 canonical record differs from checksum manifest: "
+                        f"{relative}"
+                    )
+                if relative in sizes:
+                    raise ValueError(
+                        f"duplicate 2026 canonical path: {relative}"
+                    )
+                sizes[relative] = byte_size
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        errors.append(str(exc))
+
+    if len(registered) != EXPECTED_2026_PARQUET_FILES:
+        errors.append(
+            "registered 2026 Parquet count mismatch: "
+            f"expected {EXPECTED_2026_PARQUET_FILES}, observed {len(registered)}"
+        )
+    if set(sizes) != set(registered):
+        errors.append(
+            "2026 canonical size inventory differs from checksum manifest"
+        )
+
+    actual = (
+        {
+            path.relative_to(root).as_posix()
+            for path in year_root.rglob("*.parquet")
+            if path.is_file()
+        }
+        if year_root.is_dir()
+        else set()
+    )
+    missing = sorted(set(registered) - actual)
+    additional = sorted(actual - set(registered))
+    if missing:
+        errors.append(f"registered 2026 Parquet files missing: {len(missing)}")
+    if additional:
+        errors.append(
+            f"additional unregistered 2026 Parquet files: {len(additional)}"
+        )
+
+    verified: list[tuple[str, int, str]] = []
+    size_mismatches: list[str] = []
+    hash_mismatches: list[str] = []
+    for relative in sorted(set(registered) & actual):
+        path = root / relative
+        observed_size = path.stat().st_size
+        if observed_size != sizes.get(relative):
+            size_mismatches.append(relative)
+            continue
+        observed_hash = sha256_file(path)
+        if observed_hash != registered[relative]:
+            hash_mismatches.append(relative)
+            continue
+        verified.append((relative, observed_size, observed_hash))
+    if size_mismatches:
+        errors.append(
+            f"2026 Parquet file size mismatches: {len(size_mismatches)}"
+        )
+    if hash_mismatches:
+        errors.append(
+            f"2026 Parquet content hash mismatches: {len(hash_mismatches)}"
+        )
+
+    inventory = hashlib.sha256()
+    for relative, byte_size, checksum in verified:
+        inventory.update(
+            f"{relative}\0{byte_size}\0{checksum}\n".encode("utf-8")
+        )
+    all_verified = bool(
+        not errors
+        and len(verified) == EXPECTED_2026_PARQUET_FILES
+        and len(actual) == EXPECTED_2026_PARQUET_FILES
+    )
+    return {
+        "all_verified": all_verified,
+        "errors": errors,
+        "checksum_manifest_sha256": checksum_manifest_sha256,
+        "registered_2026_file_count": len(registered),
+        "actual_2026_file_count": len(actual),
+        "verified_2026_file_count": len(verified),
+        "missing_file_count": len(missing),
+        "additional_file_count": len(additional),
+        "size_mismatch_count": len(size_mismatches),
+        "hash_mismatch_count": len(hash_mismatches),
+        "verified_file_set_sha256": (
+            inventory.hexdigest() if all_verified else None
+        ),
+        "parquet_rows_decoded": 0,
+    }
+
+
 def verify_registered_artifact_directory(path: Path) -> dict[str, Any]:
     """Hash every file registered by one historical artifact manifest."""
 
@@ -453,7 +594,11 @@ def _artifact_status(
 
 def _historical_integrity(repository_root: Path) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
-    for relative, expected in FROZEN_HISTORICAL_HASHES.items():
+    expected_files = {
+        **FROZEN_HISTORICAL_HASHES,
+        **FROZEN_ANCHOR_RULE_HASHES,
+    }
+    for relative, expected in expected_files.items():
         path = repository_root / relative
         observed = sha256_file(path) if path.is_file() else None
         records.append(
@@ -475,7 +620,7 @@ def build_preflight_result(
     repository_root: Path,
     config: IndependentReplication2026Config,
 ) -> dict[str, Any]:
-    """Inspect metadata only and never create an output or load market data."""
+    """Verify metadata and opaque 2026 bytes; never decode rows or create output."""
 
     config.validate()
     root = repository_root.resolve()
@@ -490,6 +635,7 @@ def build_preflight_result(
     )
     historical = _historical_integrity(root)
     release_integrity = verify_release_integrity(root)
+    parquet_content_integrity = verify_2026_parquet_contents(root)
     protected_integrity: dict[str, dict[str, Any]] = {}
     for requirement in artifact_requirements():
         if requirement.name in {
@@ -517,18 +663,20 @@ def build_preflight_result(
         reasons.append("FROZEN_HISTORICAL_FILE_HASH_MISMATCH")
     if not release_integrity["metadata_and_manifest_integrity_verified"]:
         reasons.append("D003_V2_RELEASE_INTEGRITY_MISMATCH")
+    if not parquet_content_integrity["all_verified"]:
+        reasons.append("2026_PARQUET_CONTENT_INTEGRITY_MISMATCH")
     if not protected_verified:
         reasons.append("PROTECTED_ARTIFACT_INTEGRITY_MISMATCH")
     if output.exists():
         reasons.append("FROZEN_2026_OUTPUT_ALREADY_EXISTS")
     reasons.extend(
         [
-            "2026_PARQUET_CONTENT_HASH_VERIFICATION_DEFERRED",
-            "2026_ANCHOR_INPUT_CONSTRUCTION_NOT_IMPLEMENTED",
-            "PARTIAL_2026_TEMPORAL_CLASSIFICATION_RULE_UNREGISTERED",
             "OUTCOME_EXECUTION_NOT_IMPLEMENTED",
         ]
     )
+    classification_reasons = [
+        "PARTIAL_2026_TEMPORAL_CLASSIFICATION_RULE_UNREGISTERED"
+    ]
     automation_present = (root / "automation/config.yaml").is_file()
     warnings = []
     if not automation_present:
@@ -560,6 +708,7 @@ def build_preflight_result(
         },
         "historical_implementation_integrity": historical,
         "release_integrity": release_integrity,
+        "2026_parquet_content_integrity": parquet_content_integrity,
         "protected_artifact_integrity": {
             "all_verified": protected_verified,
             "directories": protected_integrity,
@@ -576,9 +725,17 @@ def build_preflight_result(
         "all_required_artifacts_present": required_present,
         "output_directory": config.output_dir,
         "output_directory_created": False,
+        "anchor_input_construction_implemented": True,
         "a_b_c_classification_rule_registered": False,
-        "preflight_opened_2026_parquet_files": 0,
+        "a_b_c_classification_blocking_reasons": classification_reasons,
+        "authorized_to_emit_a_b_c_classification": False,
+        "unregistered_temporal_rule_blocks_non_a_b_c_outcomes": False,
+        "preflight_byte_hashed_2026_parquet_files": (
+            parquet_content_integrity["verified_2026_file_count"]
+        ),
+        "preflight_decoded_2026_parquet_rows": 0,
         "authorized_to_calculate_2026_outcomes": False,
+        "authorized_to_calculate_preregistered_non_a_b_c_outcomes": False,
         "blocking_reasons": reasons,
         "warnings": warnings,
     }
@@ -593,5 +750,6 @@ __all__ = [
     "render_preflight_json",
     "sha256_file",
     "verify_registered_artifact_directory",
+    "verify_2026_parquet_contents",
     "verify_release_integrity",
 ]

@@ -63,6 +63,54 @@ FROZEN_HISTORICAL_HASHES: Final = {
     ),
 }
 
+FROZEN_ANCHOR_RULE_HASHES: Final = {
+    "scripts/build_dukascopy_canonical.py": (
+        "0757ad89962f750997ad64f1344759f9b97bb7d0ac88fd8835eb7ad31fa4dba8"
+    ),
+    "scripts/validate_canonical_dataset.py": (
+        "f2ef81f4cda78675736b8ae6886b81b2dec012ea1e3eafd5b73aee31c6ff29af"
+    ),
+    "research/manipulation_0830_0900/bars.py": (
+        "f094017b6b0571fd9861491f61ac613cb895a8f0a068b8670ddd06c003728101"
+    ),
+    "research/context_engine/bars.py": (
+        "44756989dedd90379b70d0530d847bfc228654bf1a82e38b47b2d0e02bd17761"
+    ),
+    "research/context_engine/config.py": (
+        "3b86421d5292987df8d646b67ab198c4a7c8b0e620837bbe2139f1a69bf3084e"
+    ),
+    "research/context_engine/engine.py": (
+        "e8e4f6a947af5446d16680ed985b74ce33dd754649953dfccb9deae1ae88613d"
+    ),
+    "research/context_engine/features.py": (
+        "018d3671452b626168d2e83d115a3f35a09491fa7a92c2bb6078ba67062f75e1"
+    ),
+    "research/context_engine/models.py": (
+        "56e7d189cb3a39e27e553fb946d0acfa9096d3719f384986515e4ecdfd62866b"
+    ),
+    "research/d005_e1_context_engine_empirical/config.py": (
+        "ce97b6ff9be41070ef7ad9d12346448a8bb9845770c10dafe38caca05479e088"
+    ),
+    "research/d005_e1_context_engine_empirical/schedule.py": (
+        "623a47b95a82a9b62a3283d8cf7f840902a242dc943ef00513c4daddf5d13a31"
+    ),
+    "research/d005_e1_context_engine_empirical/pmh.py": (
+        "0f251e4108cd8f712d2a6a19060066b30a66d3877d9cc8fc0608850b07942443"
+    ),
+    "research/d005_e2_reaction_anchor_diagnostic/config.py": (
+        "f767cc5ff99565af574b43e460388d9e918604e2deedcd61d05968a9ec5f45b6"
+    ),
+    "research/d005_e2_reaction_anchor_diagnostic/directions.py": (
+        "8f503b98952be68827aa234a2a5d9d7b6f33388a3363bf01b4ef4c58d3d54e8c"
+    ),
+    "research/d005_e2_reaction_anchor_diagnostic/reconstruction.py": (
+        "f5045a7de48bdcd2e381e8185de0135466e1d21a1c6f61f705784dbf905e9b7c"
+    ),
+    "research/d005_e3_early_context_anchor_study/anchors.py": (
+        "c6332aa949300171f44cfcd9a5d2b5afee24aef30529721c3d3e137c6d1ebc15"
+    ),
+}
+
 
 @dataclass(frozen=True)
 class ArtifactRequirement:
@@ -335,6 +383,9 @@ class IndependentReplication2026Config:
         ]
         payload["historical_file_sha256"] = dict(
             FROZEN_HISTORICAL_HASHES
+        )
+        payload["anchor_rule_file_sha256"] = dict(
+            FROZEN_ANCHOR_RULE_HASHES
         )
         payload["historical_temporal_check_applicable"] = False
         payload["a_b_c_classification_rule_registered"] = False

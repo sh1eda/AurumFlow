@@ -195,7 +195,7 @@ not a required artifact and cannot block dataset integrity, anchor
 construction, or future replication authorization. No replacement file may be
 invented without an authoritative tracked schema or canonical template.
 
-### Metadata-only D003-v2 verification boundary
+### D003-v2 metadata and 2026 byte verification boundary
 
 Before 2026 Parquet access, preflight verifies the SHA-256 of
 `release_sha256.txt` members, the registered SHA-256 of
@@ -205,18 +205,20 @@ agreement between all 1,732 canonical file records and Parquet checksum
 entries, actual path presence, and declared byte sizes. These checks do not
 open a Parquet file.
 
-The Parquet checksum manifest can be verified as a release artifact without
-rehashing the Parquet contents. Content-hash verification of the 2026 Parquet
-files remains deferred because this pre-outcome gate forbids opening them.
-That deferred content verification remains an independent blocker; metadata
-agreement must not be represented as content verification.
+The preflight additionally selects exactly the 178 checksum-manifest entries
+under `year=2026`, rejects missing, additional, renamed, or size-mismatched
+files, and hashes the opaque bytes of every selected Parquet file. This phase
+does not decode a Parquet row. The content-integrity blocker is removed only
+when all 178 hashes match. The deterministic file-set fingerprint is computed
+from sorted repository-relative paths, sizes, and registered hashes, so an
+absolute checkout path cannot affect it.
 
 Protected historical D005/E1/E2/E3/E4 artifacts are outside the independent
 2026 sample. Preflight may hash those files against their registered artifact
 manifests. Any missing file, size mismatch, hash mismatch, duplicate record,
 unsafe path, or unregistered file fails closed.
 
-### 2026 anchor-input construction gap
+### Isolated 2026 anchor-input construction
 
 The historical E4 pipeline reads `anchor_events.parquet` and
 `unique_sequences.parquet` from the protected historical E3 output and
@@ -225,13 +227,37 @@ output. Those historical artifacts do not constitute a preregistered 2026
 anchor inventory. Restoring them is necessary for integrity and historical
 comparison, but is not sufficient to produce the independent sample.
 
-No precomputed, integrity-verified 2026 E2/E3-equivalent anchor inventory or
-documented restoration path is present. A future runner must add reviewed
-2026-only wiring that applies the exact frozen D005/E1/E2/E3 definitions to the
-accepted interval without invoking a historical rerun, changing historical
-artifacts, or reading outside the independent interval except for causally
-required pre-2026 lookback context. That wiring is not part of this preflight
-implementation. Its absence independently blocks outcome calculation.
+No precomputed 2026 E2/E3-equivalent anchor inventory is used. The additive
+module
+`research/d005_e4_2026_independent_replication/anchor_inputs.py` reconstructs
+only the frozen structural input in memory. It verifies the canonical Arrow
+schema and tick identity, reads only the registered 2026 files, constructs the
+frozen UTC one-minute, five-minute, and one-hour closed bars, replays the
+frozen fixed/event schedules and D005 context engine for `1h_5m`, applies the
+frozen E2 sequence reconstruction and engine-evidence match, and reproduces
+the frozen E3 anchor identifiers and E4 displacement/refinement deduplication.
+Because the historical E1 package initializer imports its forward pipeline,
+`frozen_structural_loader.py` loads only the hash-registered E1 structural
+config/schedule/PMH files and E2 direction/reconstruction files under private
+module names. Runtime tests require the E1/E3 forward modules and E4
+selection/analysis/pipeline modules to remain absent from `sys.modules` before
+and after construction.
+
+No data before `2026-01-01T00:00:00Z` or at/after
+`2026-07-29T00:00:00Z` may be opened to supply lookback. Missing early-period
+warm-up therefore remains missing data; it is not backfilled. Intraday bars
+remain UTC epoch-aligned and are usable only after their `available_at`
+timestamp. Partial bars are retained under the historical bar rule, PMH/PML
+incomplete coverage remains ineligible under its historical prerequisite, and
+forward-window eligibility is limited to endpoints no later than the frozen
+end with an available downstream bar. No forward price is read by this stage.
+
+The in-memory inventory contains only structural identifiers, timestamps,
+directions, confirmation state, deduplication identity, session labels, and
+eligibility flags. A schema firewall rejects price/outcome/performance
+columns. The module does not import or call the E1/E3 forward-outcome modules,
+the historical E4 selector, fitting, analysis, or reporting code, and it does
+not create the final output directory.
 
 ## Additive implementation contract
 
@@ -262,6 +288,12 @@ It must:
 The preflight intentionally contains no outcome-execution function. A future
 outcome runner requires a separate reviewed change after the gate passes and
 before any 2026 outcome is accessed.
+
+The unregistered partial-year rule blocks only an A/B/C classification. It is
+not a reason to invent a temporal rule and does not itself block a separately
+reviewed runner from calculating the already preregistered non-A/B/C outcome
+fields. At this stage all outcome calculation remains unauthorized because no
+outcome runner has been implemented.
 
 ## Output isolation and production boundary
 
