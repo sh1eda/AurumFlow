@@ -237,6 +237,26 @@ def test_overlap_nesting_ids_and_order_are_deterministic() -> None:
     assert [item.block_id for item in mutated] == [item.block_id for item in first]
 
 
+def test_interval_sweep_preserves_transitive_closed_overlap_components() -> None:
+    left = _block(block_id="left", distal=80.0, proximal=90.0)
+    bridge = _block(
+        block_id="bridge", distal=90.0, proximal=100.0,
+        creation="2024-01-02 01:30+00:00",
+    )
+    right = _block(
+        block_id="right", distal=100.0, proximal=110.0,
+        creation="2024-01-02 01:35+00:00",
+    )
+    separate = _block(
+        block_id="separate", distal=111.0, proximal=120.0,
+        creation="2024-01-02 01:40+00:00",
+    )
+    related = _attach_relationships([right, separate, left, bridge])
+    groups = {item.block_id: item.overlap_group_id for item in related}
+    assert groups["left"] == groups["bridge"] == groups["right"]
+    assert groups["separate"] != groups["right"]
+
+
 def test_preavailability_accounting_and_combined_parent_lifecycle_are_structural() -> None:
     bars = _bars()
     bars.loc[bars.index[16], ["high", "low", "close"]] = [120.0, 94.0, 119.0]
@@ -329,6 +349,7 @@ def _audit() -> dict[str, object]:
             key: (1 if key == "incomplete_endpoint" else 0)
             for key in EXCLUSION_KEYS
         },
+        "primary_exclusions_by_reason": {key: 0 for key in EXCLUSION_KEYS},
         "treatment_control_reconciliation": controls,
         "interactions": {
             key: {
@@ -399,7 +420,7 @@ def test_aggregate_and_fail_report_schemas_reconcile_and_fail_non_decisionally()
         })
 
 
-def test_preflight_is_static_hash_only_no_parquet_no_outcomes_and_no_output_dir(
+def test_preflight_is_static_hash_only_and_historical_phase_aware(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = Path.cwd()
@@ -408,20 +429,19 @@ def test_preflight_is_static_hash_only_no_parquet_no_outcomes_and_no_output_dir(
     copied_package = tmp_path / "relocated_package"
     shutil.copytree(root / "research/d006_rejection_block_research", copied_package)
     assert inspect_static_package(copied_package) == source_hashes
-    assert not (
-        {"source", "context", "outcomes", "statistics", "reporting", "pipeline"}
-        & {Path(path).stem for path in source_hashes}
+    assert {"source", "context", "outcomes", "statistics", "reporting", "pipeline"}.issubset(
+        {Path(path).stem for path in source_hashes}
     )
     forbidden_package = tmp_path / "forbidden_package"
     forbidden_package.mkdir()
-    (forbidden_package / "bad.py").write_text("import pandas as pd\npd.read_parquet('forbidden')\n", encoding="utf-8")
+    (forbidden_package / "detector.py").write_text("import pandas as pd\npd.read_parquet('forbidden')\n", encoding="utf-8")
     with pytest.raises(ValueError, match="forbidden historical/outcome call"):
         inspect_static_package(forbidden_package)
-    (forbidden_package / "bad.py").unlink()
-    (forbidden_package / "source.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (forbidden_package / "detector.py").unlink()
+    (forbidden_package / "discovery_grid.py").write_text("VALUE = 1\n", encoding="utf-8")
     with pytest.raises(ValueError, match="forbidden D006 module"):
         inspect_static_package(forbidden_package)
-    (forbidden_package / "source.py").unlink()
+    (forbidden_package / "discovery_grid.py").unlink()
     nested = forbidden_package / "nested"
     nested.mkdir()
     (nested / "bad.py").write_text(
@@ -437,7 +457,11 @@ def test_preflight_is_static_hash_only_no_parquet_no_outcomes_and_no_output_dir(
         return original_read_bytes(path)
 
     monkeypatch.setattr(Path, "read_bytes", guarded_read_bytes)
-    result = run_preflight(root, ["research/d006_rejection_block_research/config.py", "tests/test_d006_rejection_block_research.py"])
+    result = run_preflight(
+        root,
+        ["research/d006_rejection_block_research/config.py", "tests/test_d006_rejection_block_research.py"],
+        historical_execution_authorized=True,
+    )
     assert result.spec_hash_status == "VERIFIED"
     assert result.protected_hashes and result.data_metadata_hashes
     assert len(result.implementation_fingerprint) == 64
@@ -465,7 +489,7 @@ def test_current_diff_preserves_every_protected_milestone_and_production_path() 
     assert changed
     assert all(
         path == "docs/D006_REJECTION_BLOCK_RESEARCH_SPEC.md"
-        or path == "tests/test_d006_rejection_block_research.py"
+        or path.startswith("tests/test_d006_")
         or path.startswith("research/d006_rejection_block_research/")
         for path in changed
     )

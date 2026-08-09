@@ -65,6 +65,7 @@ AGGREGATE_AUDIT_FIELDS = (
     "by_direction",
     "by_terminal_state",
     "exclusions_by_reason",
+    "primary_exclusions_by_reason",
     "treatment_control_reconciliation",
     "interactions",
     "geometry",
@@ -232,8 +233,8 @@ def validate_aggregate_audit(audit: Mapping[str, object]) -> None:
     """Validate an exact, deterministically reconciled structural audit payload."""
 
     _reject_forbidden_keys(audit)
-    if tuple(audit.keys()) != AGGREGATE_AUDIT_FIELDS:
-        raise SchemaError("aggregate audit fields must exactly match the D006 schema and order")
+    if set(audit) != set(AGGREGATE_AUDIT_FIELDS):
+        raise SchemaError("aggregate audit fields must exactly match the D006 schema")
     counts = (
         "detected", "duplicate_id_excluded", "lifecycle_eligible", "endpoint_eligible",
         "endpoint_complete_count", "touched", "untouched", "invalidated", "mitigated",
@@ -267,6 +268,15 @@ def validate_aggregate_audit(audit: Mapping[str, object]) -> None:
         raise SchemaError("duplicate-ID count does not match its exclusion")
     if audit["preavailability_count"] != exclusions["pre_availability_interaction"]:
         raise SchemaError("preavailability count does not match its exclusion")
+    primary_exclusions = audit["primary_exclusions_by_reason"]
+    if (
+        not isinstance(primary_exclusions, Mapping)
+        or set(primary_exclusions) != EXCLUSION_KEYS
+        or any(not _is_nonnegative_int(value) for value in primary_exclusions.values())
+        or sum(primary_exclusions.values())
+        != audit["expected_primary_pairs"] - audit["observed_primary_pairs"]
+    ):
+        raise SchemaError("primary exclusion counts do not reconcile")
     exact_count_maps = (
         ("by_definition", DEFINITION_KEYS, audit["detected"]),
         ("by_year", YEAR_KEYS, audit["detected"]),

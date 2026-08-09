@@ -172,15 +172,30 @@ def _relationship_sort_key(block: RejectionBlock, registry_order: dict[str, int]
 
 def _attach_relationships(blocks: Iterable[RejectionBlock], registry_order: dict[str, int] | None = None) -> list[RejectionBlock]:
     ordered = sorted(blocks, key=lambda block: _relationship_sort_key(block, registry_order))
+    # Closed one-dimensional interval components can be built by a sweep.  This
+    # is exactly equivalent to the original connected-component definition but
+    # avoids quadratic scans when historical blocks form long overlap chains.
+    by_price = sorted(
+        ordered,
+        key=lambda block: (
+            min(block.distal, block.proximal),
+            max(block.distal, block.proximal),
+            _relationship_sort_key(block, registry_order),
+        ),
+    )
     groups: list[list[RejectionBlock]] = []
-    for block in ordered:
+    component: list[RejectionBlock] = []
+    component_upper: float | None = None
+    for block in by_price:
         lower, upper = sorted((block.distal, block.proximal))
-        connected = [group for group in groups if any(lower <= max(item.distal, item.proximal) and upper >= min(item.distal, item.proximal) for item in group)]
-        if not connected:
-            groups.append([block])
-        else:
-            combined = [item for group in connected for item in group] + [block]
-            groups = [group for group in groups if group not in connected] + [combined]
+        if component and component_upper is not None and lower > component_upper:
+            groups.append(component)
+            component = []
+            component_upper = None
+        component.append(block)
+        component_upper = upper if component_upper is None else max(component_upper, upper)
+    if component:
+        groups.append(component)
     assigned: dict[str, RejectionBlock] = {}
     for group in sorted(groups, key=lambda group: min(_relationship_sort_key(item, registry_order) for item in group)):
         group_id = "overlap-" + sha256("|".join(sorted(item.block_id for item in group)).encode("utf-8")).hexdigest()[:16]

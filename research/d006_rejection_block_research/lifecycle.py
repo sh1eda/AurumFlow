@@ -22,7 +22,12 @@ def evaluate_lifecycle(block: RejectionBlock, bars: pd.DataFrame, evaluation_at:
     first_touch = mitigation = invalidation = expiry = None
     touches = 0
     status = "ACTIVE_UNTOUCHED"
-    eligible = bars[bars.index >= block.causal_availability]
+    start = bars.index.searchsorted(block.causal_availability, side="left")
+    # No lifecycle transition after the first bar whose availability exceeds
+    # expiry can affect the registered state.  Bound the historical scan while
+    # preserving the exact precedence used by the synthetic implementation.
+    stop = bars.index.searchsorted(expiry_at, side="right") + 1
+    eligible = bars.iloc[start:min(stop, len(bars))]
     for timestamp, row in eligible.iterrows():
         available_at = row.available_at
         if available_at > cutoff:

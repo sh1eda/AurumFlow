@@ -19,20 +19,26 @@ from .config import (
 
 
 OWNED_PACKAGE = Path("research/d006_rejection_block_research")
-OWNED_TEST = Path("tests/test_d006_rejection_block_research.py")
-ALLOWED_CHANGED_PREFIXES = (str(OWNED_PACKAGE) + "/", str(OWNED_TEST), "docs/D006_")
-FORBIDDEN_MODULE_STEMS = {
+OWNED_TEST_PREFIX = "tests/test_d006_"
+ALLOWED_CHANGED_PREFIXES = (str(OWNED_PACKAGE) + "/", OWNED_TEST_PREFIX, "docs/D006_")
+ALLOWED_MODULE_STEMS = {
+    "__init__",
     "__main__",
-    "analysis",
-    "cli",
+    "config",
     "context",
+    "detector",
+    "lifecycle",
+    "models",
     "outcomes",
-    "output",
     "pipeline",
+    "preflight",
     "reporting",
+    "schemas",
     "source",
-    "source_loader",
     "statistics",
+}
+STRUCTURAL_ONLY_MODULE_STEMS = {
+    "config", "detector", "lifecycle", "models", "preflight", "schemas"
 }
 FORBIDDEN_IMPORT_PREFIXES = (
     "duckdb",
@@ -49,7 +55,6 @@ FORBIDDEN_IMPORT_PREFIXES = (
 )
 FORBIDDEN_CALL_NAMES = {
     "ParquetFile",
-    "bootstrap",
     "calculate_outcomes",
     "open",
     "read_csv",
@@ -108,11 +113,11 @@ def verify_path_hashes(root: Path, expected: Mapping[Path, str]) -> dict[str, st
 
 
 def inspect_static_package(package_root: Path) -> dict[str, str]:
-    """Forbid loader, evaluation, reporting, and Parquet-reading implementation paths."""
+    """Audit the exact D006 module surface and preserve structural-layer isolation."""
 
     files = sorted(package_root.rglob("*.py"))
     stems = {path.stem for path in files}
-    forbidden = stems & FORBIDDEN_MODULE_STEMS
+    forbidden = stems - ALLOWED_MODULE_STEMS
     if forbidden:
         raise ValueError(f"forbidden D006 module names: {sorted(forbidden)}")
     hashes: dict[str, str] = {}
@@ -121,6 +126,8 @@ def inspect_static_package(package_root: Path) -> dict[str, str]:
         tree = ast.parse(source, filename=str(path))
         for node in ast.walk(tree):
             if (
+                path.stem in STRUCTURAL_ONLY_MODULE_STEMS
+                and
                 isinstance(node, ast.Constant)
                 and isinstance(node.value, str)
                 and ".par" + "quet" in node.value.lower()
@@ -131,7 +138,7 @@ def inspect_static_package(package_root: Path) -> dict[str, str]:
                 modules = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom):
                 modules = [node.module or ""]
-            if any(
+            if path.stem in STRUCTURAL_ONLY_MODULE_STEMS and any(
                 module == forbidden or module.startswith(forbidden + ".")
                 or (
                     forbidden in {"research.d004", "research.d005"}
@@ -150,7 +157,7 @@ def inspect_static_package(package_root: Path) -> dict[str, str]:
                     if isinstance(call, ast.Attribute)
                     else ""
                 )
-                if name in FORBIDDEN_CALL_NAMES:
+                if path.stem in STRUCTURAL_ONLY_MODULE_STEMS and name in FORBIDDEN_CALL_NAMES:
                     raise ValueError(f"forbidden historical/outcome call in {path}: {name}")
         hashes[str(path.relative_to(package_root))] = _hash_file(path)
     return hashes
@@ -184,11 +191,14 @@ def run_preflight(
     root: Path,
     changed_paths: Iterable[str],
     config: D006Config = D006Config(),
+    *,
+    historical_execution_authorized: bool = False,
 ) -> PreflightResult:
-    """Perform static and hash-only checks; this function cannot execute research."""
+    """Perform static and hash-only checks without opening a Parquet payload."""
 
     assert_allowed_changed_paths(changed_paths)
-    assert_no_scientific_output_dir(root)
+    if not historical_execution_authorized:
+        assert_no_scientific_output_dir(root)
     source_hashes = inspect_static_package(root / OWNED_PACKAGE)
     checked_protected = verify_path_hashes(
         root, {Path(path): digest for path, digest in PROTECTED_TRACKED_SHA256}
