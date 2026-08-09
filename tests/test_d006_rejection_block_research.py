@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import fields, replace
 from pathlib import Path
 import shutil
-import subprocess
 
 import pandas as pd
 import pytest
@@ -478,21 +477,39 @@ def _output_dir_error(root: Path) -> None:
     assert_no_scientific_output_dir(root)
 
 
-def test_current_diff_preserves_every_protected_milestone_and_production_path() -> None:
-    completed = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all"],
-        check=True,
-        capture_output=True,
-        text=True,
+def test_d006_write_scope_is_milestone_scoped_and_protects_prior_work() -> None:
+    """Exercise the active-D006 scope guard without policing later worktrees."""
+
+    assert_allowed_changed_paths(
+        (
+            "docs/D006_REJECTION_BLOCK_RESEARCH_SPEC.md",
+            "research/d006_rejection_block_research/config.py",
+            "tests/test_d006_rejection_block_research.py",
+        )
     )
-    changed = [line[3:] for line in completed.stdout.splitlines() if line]
-    assert changed
-    assert all(
-        path == "docs/D006_REJECTION_BLOCK_RESEARCH_SPEC.md"
-        or path.startswith("tests/test_d006_")
-        or path.startswith("research/d006_rejection_block_research/")
-        for path in changed
+
+    forbidden_during_d006 = (
+        "docs/D003_ACCEPTANCE_REPORT.md",
+        "docs/D004_XAUUSD_0830_0900_MANIPULATION_RESEARCH.md",
+        "docs/D005_STRATEGY_SOURCE_AUDIT.md",
+        "docs/D005_E4_1H_5M_REVERSAL_REPLICATION_SPEC.md",
+        "docs/D005_E5_REPORTING_HARDENING_SPEC.md",
+        "docs/D005_E6_FUTURE_BLIND_REPLICATION_SPEC.md",
+        "xauusd_signal/strategy.py",
+        "xauusd_signal/cli.py",
+        "data/canonical/xauusd_ticks_d003-v2/canonical_manifest.json",
+        "data/releases/d003-v2/canonical_manifest.json",
+        "data/releases/d003-v2/full_verification.json",
+        "data/releases/d003-v2/parquet_sha256.txt",
+        "data/releases/d003-v2/release_sha256.txt",
+        "README.md",
+        "docs/D007_OTE_RESEARCH_SPEC.md",
+        "research/d007_ote_research/config.py",
+        "tests/test_d007_ote_research.py",
     )
+    for path in forbidden_during_d006:
+        with pytest.raises(ValueError, match="outside D006 ownership"):
+            assert_allowed_changed_paths((path,))
 
 
 def test_spec_records_criterion_level_provenance_without_source_overclaim() -> None:
