@@ -9,11 +9,20 @@ from pathlib import Path
 
 import pandas as pd
 
+from research.d007_methodology_clarification import (
+    ADDENDUM_SHA256,
+    named_trading_date,
+    verify_upstream_identities,
+)
 from research.d007_ote_research.config import config_fingerprint as d007_config_fingerprint
 from research.d007_ote_research.preflight import run_preflight as run_synthetic_preflight
 
 from .config import (
     ALLOWED_CHANGED_PREFIXES,
+    CLARIFICATION_MODULE_PATH,
+    CLARIFICATION_MODULE_SHA256,
+    CLARIFICATION_SPEC_PATH,
+    CLARIFICATION_SPEC_SHA256,
     CONTRACT_SPEC_PATH,
     CONTRACT_SPEC_SHA256,
     DEFAULT_CONTRACT,
@@ -45,6 +54,9 @@ class ContractPreflightResult:
     d007_spec_sha256: str
     d007_config_fingerprint: str
     d007_synthetic_implementation_fingerprint: str
+    clarification_addendum_sha256: str
+    clarification_module_sha256: str
+    clarification_dependency_hashes: dict[str, str]
     d005_e4_artifact_hashes: dict[str, str]
     contract_implementation_hashes: dict[str, str]
     d004_reproducibility_sha256: str
@@ -174,7 +186,7 @@ def required_endpoint_timestamps(
         event + pd.Timedelta(minutes=offset)
         for offset in range(0, contract.endpoint_minutes + 1, contract.bar_minutes)
     )
-    named_years = tuple(stamp.tz_convert(contract.timezone).year for stamp in required)
+    named_years = tuple(named_trading_date(stamp).year for stamp in required)
     if any(year in contract.forbidden_named_years for year in named_years):
         raise ContractPreflightError("D007 endpoint enters forbidden New York named-year 2026")
     if any(year not in contract.validation_years for year in named_years):
@@ -397,6 +409,22 @@ def run_contract_preflight(
     validate_frozen_contract(contract)
     root = repository_root.resolve()
     contract_spec = verify_file_sha256(root / CONTRACT_SPEC_PATH, CONTRACT_SPEC_SHA256, "D007 historical contract specification")
+    clarification_spec = verify_file_sha256(
+        root / CLARIFICATION_SPEC_PATH,
+        CLARIFICATION_SPEC_SHA256,
+        "D007 methodology clarification addendum",
+    )
+    clarification_module = verify_file_sha256(
+        root / CLARIFICATION_MODULE_PATH,
+        CLARIFICATION_MODULE_SHA256,
+        "D007 methodology clarification module",
+    )
+    if clarification_spec != ADDENDUM_SHA256:
+        raise ContractPreflightError("D007 clarification addendum identity mismatch")
+    try:
+        clarification_dependencies = verify_upstream_identities(root)
+    except ValueError as error:
+        raise ContractPreflightError(str(error)) from error
     synthetic_changed_paths = tuple(
         path for path in changed_paths if path.startswith(("research/d007_ote_research/", "tests/test_d007_", "docs/D007_"))
         and not path.startswith(("research/d007_ote_historical_contract/", "tests/test_d007_historical_contract.py", "docs/D007_HISTORICAL_EXECUTION_CONTRACT.md"))
@@ -420,6 +448,9 @@ def run_contract_preflight(
         d007_spec_sha256=synthetic.spec_sha256,
         d007_config_fingerprint=d007_config_fingerprint(),
         d007_synthetic_implementation_fingerprint=synthetic.implementation_fingerprint,
+        clarification_addendum_sha256=clarification_spec,
+        clarification_module_sha256=clarification_module,
+        clarification_dependency_hashes=clarification_dependencies,
         d005_e4_artifact_hashes=artifacts,
         contract_implementation_hashes=implementation_hashes,
         d004_reproducibility_sha256=d004_reproducibility,

@@ -12,7 +12,11 @@ from .schemas import ALL_ARTIFACTS, schema_fingerprint
 
 CONTRACT_SPEC_PATH = Path("docs/D007_HISTORICAL_EXECUTION_CONTRACT.md")
 CONTRACT_SPEC_SHA256 = "59fc8ddd0ab1aa8786de573817e1ac47d1efcfd81918c8754b4f3150ac818a84"
-FROZEN_CONTRACT_FINGERPRINT = "b3eaf6086c1ca4ccf48810fa76bce37e9bdca3bf4928289d599ef36d46ab0ffc"
+CLARIFICATION_SPEC_PATH = Path("docs/D007_METHODOLOGY_CLARIFICATION.md")
+CLARIFICATION_SPEC_SHA256 = "b5637a24ce9cb97c35e68636d17fe2359396397422652d1ff5b2d3c2811f087b"
+CLARIFICATION_MODULE_PATH = Path("research/d007_methodology_clarification.py")
+CLARIFICATION_MODULE_SHA256 = "cf58d7f34b5b00ccc1168cb60a85f417ecc1527c276641213084515e97cd5ca1"
+FROZEN_CONTRACT_FINGERPRINT = "952658033175b00c880883bfb034c6ee20c49d376dd72418e084b3f1b0244078"
 FROZEN_SCHEMA_SHA256 = "703f6c0d61e7d73cf13ad14e36732abbb91acf141f104ec46ea4f03252061d31"
 EXECUTION_AUTHORIZATION = "EXECUTE_FROZEN_D007_OTE_2022_2025"
 CANONICAL_MODULE = "research.d007_ote_historical_contract"
@@ -31,7 +35,7 @@ D005_E4_ROOT = Path("research_outputs/D005_E4_1H_5M_REVERSAL_REPLICATION")
 D007_SPEC_SHA256 = "adb093f40b0a3a43a6174e81763e3625d38e88ba223f4b392076a240918d364f"
 D007_CONFIG_FINGERPRINT = "83150b0f40e418fbe0ce1f7a308e62bff705af98be0267254375f82a585938a8"
 D007_SYNTHETIC_IMPLEMENTATION_FINGERPRINT = (
-    "64af3ec42b09e8a3782b6651b7f06274a17c845f7e76f23f589faf11c503b96b"
+    "475208c3f41d57ed283d64ba8b8955b848b7fe09ef92b0f7d026c1268c010987"
 )
 
 D005_E4_ARTIFACT_SHA256 = (
@@ -47,20 +51,24 @@ D005_E4_ARTIFACT_SHA256 = (
 FROZEN_CONTRACT_IMPLEMENTATION_SHA256 = (
     ("__init__.py", "f6d2f94b05d9410d7d1bdf25ab7138b73f6f44184f0730d33189bdef3113588a"),
     ("__main__.py", "53caca90c43d3b8f8c9fe7b65dadd531ce8620cd5ef2d7a80c7ddddd6710f729"),
-    ("config.py", "3a300a1d4d928d02ac36402e7467b2916fbce9f2c9affcd6f06fa0782f12b580"),
-    ("preflight.py", "9615f5fad0ece6fd0336c29edd453224bca3c882a3aafb1e461c76295a290fc0"),
+    ("config.py", "5814125aea70e9c1bbdabc564f7d1f90f9f687e9e38515fe5b6e50a383702597"),
+    ("preflight.py", "5d131d68046dca1dff32c2d579dcc4b4016017e6ebadb9770c436b7790ab1cd6"),
     ("runner.py", "88d3fc00a9722ffa827f782b8fd00d3e69cc533c576dceb69c87ee3f9f46f9b0"),
     ("schemas.py", "9a085db7ca73256575b1c90c490dc1c8e97bae49830e4ba54d57ec23397933b0"),
 )
 
 ALLOWED_CHANGED_PREFIXES = (
+    "docs/D007_METHODOLOGY_CLARIFICATION.md",
     "docs/D007_HISTORICAL_EXECUTION_CONTRACT.md",
+    "research/d007_methodology_clarification.py",
+    "research/d007_ote_research/guardrails.py",
     "research/d007_ote_historical_contract/",
+    "tests/test_d007_methodology_clarification.py",
     "tests/test_d007_historical_contract.py",
 )
 
 VALIDATION_COMMANDS = (
-    "python -m pytest tests/test_d007_historical_contract.py tests/test_d007_ote_research.py -q",
+    "python -m pytest tests/test_d007_methodology_clarification.py tests/test_d007_historical_contract.py tests/test_d007_ote_research.py -q",
     "python -m pytest tests/test_d005_e4_1h_5m_reversal_replication.py tests/test_d005_e5_reporting_hardening.py tests/test_d005_e6_future_blind_replication.py -q",
     "python -m pytest tests/test_d006_rejection_block_research.py tests/test_d006_historical_source.py tests/test_d006_historical_context.py tests/test_d006_historical_execution.py -q",
     "python -m research.d007_ote_historical_contract preflight --authorization EXECUTE_FROZEN_D007_OTE_2022_2025",
@@ -224,6 +232,10 @@ class HistoricalExecutionContract:
         payload.update(
             {
                 "canonical_execution_command": CANONICAL_EXECUTION_COMMAND,
+                "clarification_module_path": CLARIFICATION_MODULE_PATH.as_posix(),
+                "clarification_module_sha256": CLARIFICATION_MODULE_SHA256,
+                "clarification_spec_path": CLARIFICATION_SPEC_PATH.as_posix(),
+                "clarification_spec_sha256": CLARIFICATION_SPEC_SHA256,
                 "contract_spec_path": CONTRACT_SPEC_PATH.as_posix(),
                 "contract_spec_sha256": CONTRACT_SPEC_SHA256,
                 "d007_config_fingerprint": D007_CONFIG_FINGERPRINT,
@@ -263,6 +275,10 @@ def validate_frozen_contract(contract: HistoricalExecutionContract = DEFAULT_CON
 
 __all__ = [
     "CANONICAL_EXECUTION_COMMAND",
+    "CLARIFICATION_MODULE_PATH",
+    "CLARIFICATION_MODULE_SHA256",
+    "CLARIFICATION_SPEC_PATH",
+    "CLARIFICATION_SPEC_SHA256",
     "CONTRACT_SPEC_PATH",
     "CONTRACT_SPEC_SHA256",
     "DEFAULT_CONTRACT",
