@@ -9,6 +9,10 @@ import pytest
 
 from research.d007_ote_historical_contract.__main__ import build_parser
 from research.d007_ote_historical_contract.config import (
+    CLARIFICATION_MODULE_PATH,
+    CLARIFICATION_MODULE_SHA256,
+    CLARIFICATION_SPEC_PATH,
+    CLARIFICATION_SPEC_SHA256,
     CONTRACT_SPEC_PATH,
     CONTRACT_SPEC_SHA256,
     DEFAULT_CONTRACT,
@@ -56,6 +60,8 @@ def test_contract_identity_and_spec_are_frozen() -> None:
     validate_frozen_contract()
     assert contract_fingerprint() == FROZEN_CONTRACT_FINGERPRINT
     assert sha256_file(ROOT / CONTRACT_SPEC_PATH) == CONTRACT_SPEC_SHA256
+    assert sha256_file(ROOT / CLARIFICATION_SPEC_PATH) == CLARIFICATION_SPEC_SHA256
+    assert sha256_file(ROOT / CLARIFICATION_MODULE_PATH) == CLARIFICATION_MODULE_SHA256
     assert DEFAULT_CONTRACT.schema_sha256 == schema_fingerprint()
     assert schema_fingerprint() == FROZEN_SCHEMA_SHA256
     assert {name for name, _digest in FROZEN_CONTRACT_IMPLEMENTATION_SHA256} == {
@@ -175,7 +181,9 @@ def test_endpoint_boundary_uses_new_york_named_year_and_source_terminal() -> Non
     required = required_endpoint_timestamps("2025-12-30T15:00:00Z")
     assert len(required) == 13
     assert required[-1] == pd.Timestamp("2025-12-30T16:00:00Z")
-    with pytest.raises(ContractPreflightError, match="terminal boundary"):
+    with pytest.raises(ContractPreflightError, match="named-year 2026"):
+        required_endpoint_timestamps("2025-12-31T22:30:00Z")
+    with pytest.raises(ContractPreflightError, match="named-year 2026"):
         required_endpoint_timestamps("2025-12-31T23:30:00Z")
     with pytest.raises(ContractPreflightError, match="named-year 2026"):
         required_endpoint_timestamps("2026-01-01T05:00:00Z")
@@ -248,6 +256,9 @@ def test_outcome_blind_repository_preflight_authorizes_only_the_contract() -> No
     assert result.d004_reproducibility_sha256 == "c29fa7de14e51970ab51bc71f53c73d50ea470e8c1e6fc2d970273826a980133"
     assert result.d005_e4_implementation_sha256 == DEFAULT_CONTRACT.d005_e4_implementation_sha256
     assert result.contract_implementation_hashes == dict(FROZEN_CONTRACT_IMPLEMENTATION_SHA256)
+    assert result.clarification_addendum_sha256 == CLARIFICATION_SPEC_SHA256
+    assert result.clarification_module_sha256 == CLARIFICATION_MODULE_SHA256
+    assert result.clarification_dependency_hashes
     assert result.decoded_market_rows == 0
     assert result.constructed_d007_events == 0
     assert result.accessed_historical_outcomes is False

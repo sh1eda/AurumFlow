@@ -17,6 +17,7 @@ from .config import (
     FIXED_INTERACTIONS,
 )
 from .models import Direction, OTERange
+from research.d007_methodology_clarification import named_trading_date
 
 
 CONTROL_SESSIONS = (
@@ -54,10 +55,11 @@ class ControlCandidate:
             raise ValueError("control candidate ID is required")
         if self.validation_year != self.named_trading_date.year:
             raise ValueError("control validation year must match named trading date")
-        if self.named_trading_date != self.event_at.tz_convert(
-            "America/New_York"
-        ).date():
-            raise ValueError("control named trading date must match America/New_York event date")
+        if self.named_trading_date != named_trading_date(self.event_at):
+            raise ValueError(
+                "control named trading date must match the frozen D007 "
+                "18:00 America/New_York roll"
+            )
         if self.session not in CONTROL_SESSIONS:
             raise ValueError("control session is outside the frozen D005 vocabulary")
         if not isinstance(self.direction, Direction):
@@ -214,7 +216,7 @@ def endpoint_eligible_from_availability(
     if event.tz is None:
         raise ValueError("event timestamp must be timezone-aware")
     event = event.tz_convert("UTC")
-    if event.tz_convert("America/New_York").year not in config.validation_years:
+    if named_trading_date(event).year not in config.validation_years:
         return False
     available = {pd.Timestamp(value).tz_convert("UTC") for value in complete_bar_availability}
     required = {
@@ -222,7 +224,7 @@ def endpoint_eligible_from_availability(
         for offset in range(0, config.primary_horizon_minutes + 1, config.bar_minutes)
     }
     if any(
-        stamp.tz_convert("America/New_York").year not in config.validation_years
+        named_trading_date(stamp).year not in config.validation_years
         for stamp in required
     ):
         return False

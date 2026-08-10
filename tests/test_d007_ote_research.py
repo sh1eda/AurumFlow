@@ -482,13 +482,18 @@ def test_endpoint_eligibility_uses_timestamps_only_and_forbids_2026() -> None:
         event_2026 + pd.Timedelta(minutes=offset) for offset in range(0, 61, 5)
     ]
     assert not endpoint_eligible_from_availability(event_2026, complete_2026)
-    utc_cross_year = _stamp("2025-12-31 23:30+00:00")
+    utc_cross_year = _stamp("2025-12-31 22:30+00:00")
     utc_cross_year_complete = [
         utc_cross_year + pd.Timedelta(minutes=offset) for offset in range(0, 61, 5)
     ]
-    assert endpoint_eligible_from_availability(
+    assert not endpoint_eligible_from_availability(
         utc_cross_year, utc_cross_year_complete
     )
+    after_roll = _stamp("2025-12-31 23:30+00:00")
+    after_roll_complete = [
+        after_roll + pd.Timedelta(minutes=offset) for offset in range(0, 61, 5)
+    ]
+    assert not endpoint_eligible_from_availability(after_roll, after_roll_complete)
     cross_year = _stamp("2026-01-01 04:30+00:00")
     cross_year_complete = [
         cross_year + pd.Timedelta(minutes=offset) for offset in range(0, 61, 5)
