@@ -133,10 +133,15 @@ _TABLE_SCHEMAS = {
     ),
     "redundancy_audit.parquet": (
         _field("feature", "string"),
-        _field("overlap_count", "int64"),
-        _field("denominator", "int64"),
-        _field("overlap_rate", "float64", True),
+        _field("time_association_count", "int64"),
+        _field("time_association_denominator", "int64"),
+        _field("time_association_rate", "float64", True),
+        _field("price_overlap_count", "int64"),
+        _field("price_overlap_denominator", "int64"),
+        _field("price_overlap_rate", "float64", True),
+        _field("price_audit_state", "string"),
         _field("median_signed_minutes", "float64", True),
+        _field("first_failure", "string", True),
         _field("incremental_status", "string"),
     ),
     "sensitivity_705.parquet": (

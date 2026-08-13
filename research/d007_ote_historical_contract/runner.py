@@ -1,4 +1,4 @@
-"""Canonical future D007 command boundary; empirical execution is deferred."""
+"""Canonical D007 command boundary for the frozen empirical pipeline."""
 
 from __future__ import annotations
 
@@ -7,10 +7,6 @@ from pathlib import Path
 
 from .config import DEFAULT_CONTRACT, OUTPUT_DIRECTORY, HistoricalExecutionContract
 from .preflight import ContractPreflightResult, run_contract_preflight
-
-
-class HistoricalPipelineDeferred(RuntimeError):
-    """The contract is valid, but this milestone cannot execute outcomes."""
 
 
 @dataclass(frozen=True)
@@ -46,21 +42,23 @@ def run_historical_execution(
     authorization: str,
     contract: HistoricalExecutionContract = DEFAULT_CONTRACT,
 ) -> Path:
-    """Preserve the canonical API while forbidding outcomes in this milestone."""
+    """Authorize once, then enter the parameter-free authenticated pipeline."""
 
-    prepare_historical_execution(
+    prepared = prepare_historical_execution(
         repository_root,
         authorization=authorization,
         contract=contract,
     )
-    raise HistoricalPipelineDeferred(
-        "HISTORICAL_PIPELINE_DEFERRED: contract milestone cannot access D007 outcomes"
-    )
+    from .pipeline import run_authenticated_historical_pipeline
+
+    output = run_authenticated_historical_pipeline(prepared.root)
+    if output.resolve() != prepared.output:
+        raise RuntimeError("D007 historical pipeline returned an unauthorized output path")
+    return output
 
 
 __all__ = [
     "AuthorizedExecution",
-    "HistoricalPipelineDeferred",
     "prepare_historical_execution",
     "run_historical_execution",
 ]

@@ -19,9 +19,9 @@ CLARIFICATION_MODULE_SHA256 = "cf58d7f34b5b00ccc1168cb60a85f417ecc1527c276641213
 ASSOCIATION_SPEC_PATH = Path("docs/D007_ASSOCIATION_IDENTITY_CLARIFICATION.md")
 ASSOCIATION_SPEC_SHA256 = "a885365ff2fb4004792a0af54b9eab4e51ad1b9095ed650d458306050305f2de"
 ASSOCIATION_MODULE_PATH = Path("research/d007_association_identity.py")
-ASSOCIATION_MODULE_SHA256 = "02c7ba7f64fb7aac5b6ab9ba17e1a24eae60fe6398c5f2e3b978616a10130553"
-FROZEN_CONTRACT_FINGERPRINT = "6c30867112c1c50acef36e276a72987b791bcf1ac8efd76e78d441b35c60507b"
-FROZEN_SCHEMA_SHA256 = "703f6c0d61e7d73cf13ad14e36732abbb91acf141f104ec46ea4f03252061d31"
+ASSOCIATION_MODULE_SHA256 = "2d8d192cc9fd416b388f80e6f667f09e1dc129fc5e1cb0366027b1fd0b6f8377"
+FROZEN_CONTRACT_FINGERPRINT = "7af2b0466ecffc36a99aebac38c39c6dccefdb5d6bcbf692845ec9461e082769"
+FROZEN_SCHEMA_SHA256 = "7beab3fe0e5a901b0d0915ab3299535042189a53aa3fc7025998042f087f8d75"
 EXECUTION_AUTHORIZATION = "EXECUTE_FROZEN_D007_OTE_2022_2025"
 CANONICAL_MODULE = "research.d007_ote_historical_contract"
 CANONICAL_EXECUTION_COMMAND = (
@@ -53,12 +53,18 @@ D005_E4_ARTIFACT_SHA256 = (
 )
 
 FROZEN_CONTRACT_IMPLEMENTATION_SHA256 = (
-    ("__init__.py", "f6d2f94b05d9410d7d1bdf25ab7138b73f6f44184f0730d33189bdef3113588a"),
-    ("__main__.py", "53caca90c43d3b8f8c9fe7b65dadd531ce8620cd5ef2d7a80c7ddddd6710f729"),
-    ("config.py", "12c81a9afd3fa9fdabaa1aacaa206211c26270dbd9df98d7c7508b3692f77f8a"),
+    ("__init__.py", "2609c4850dd5d5bc5c752503a85b0233ba04dc2f0ac7583ec96f1a3cde206d1a"),
+    ("__main__.py", "f1011f033a866f31b2f354fa05d65604ad901669e084d242b01697434065d1dc"),
+    ("artifacts.py", "c2f16bb067faffd2b965649aeaf1d0a00a3f73c1b5e805bdcf5a35750d239b3a"),
+    ("config.py", "eac87f7425b711478ecc449d94b963ebd61cdf3d713b5d43bc6c08ed30441cb4"),
+    ("empirical.py", "8fabfb25abbd1d1783273418ea780892112a02d3cac2a2d8dfd20bc21b0b59e3"),
+    ("loaders.py", "1df4e40056c6b14346320852e1c1be6230f09babc6cc6b2c01f50e715a8a388c"),
+    ("pipeline.py", "925d2611c414568478f41376d8b2a5b0195b76f70d854c8534b1ba3760b0c834"),
     ("preflight.py", "c85861e2ef67bc45df260a90258e24259ce94794edfde4189c50c5415150a07c"),
-    ("runner.py", "88d3fc00a9722ffa827f782b8fd00d3e69cc533c576dceb69c87ee3f9f46f9b0"),
-    ("schemas.py", "9a085db7ca73256575b1c90c490dc1c8e97bae49830e4ba54d57ec23397933b0"),
+    ("reporting.py", "1a02817871a1f19f2fe996557446bf9eaa0c958caf2330737210c9e5a25855ad"),
+    ("runner.py", "4e087796aec96710b08352b134301336edb3186343cdf2720d3597818393a745"),
+    ("schemas.py", "7f1962d382422881f2ed93c4698f4b692a47a7e4b74b55ff63f9c826833b8cd1"),
+    ("statistics.py", "b22e1ccfff244efdeb7b9146cce973c19195584ecdf3b72a3e1576789cc4f968"),
 )
 
 ALLOWED_CHANGED_PREFIXES = (
@@ -71,10 +77,12 @@ ALLOWED_CHANGED_PREFIXES = (
     "research/d007_ote_historical_contract/",
     "tests/test_d007_methodology_clarification.py",
     "tests/test_d007_association_identity.py",
+    "tests/test_d007_empirical_",
     "tests/test_d007_historical_contract.py",
 )
 
 VALIDATION_COMMANDS = (
+    "python -m pytest tests/test_d007_empirical_artifacts.py tests/test_d007_empirical_core.py tests/test_d007_empirical_e2e.py tests/test_d007_empirical_loaders.py tests/test_d007_empirical_reporting.py tests/test_d007_empirical_statistics.py -q",
     "python -m pytest tests/test_d007_association_identity.py tests/test_d007_methodology_clarification.py tests/test_d007_historical_contract.py tests/test_d007_ote_research.py -q",
     "python -m pytest tests/test_d005_e4_1h_5m_reversal_replication.py tests/test_d005_e5_reporting_hardening.py tests/test_d005_e6_future_blind_replication.py -q",
     "python -m pytest tests/test_d006_rejection_block_research.py tests/test_d006_historical_source.py tests/test_d006_historical_context.py tests/test_d006_historical_execution.py -q",

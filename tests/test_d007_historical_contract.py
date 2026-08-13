@@ -42,10 +42,7 @@ from research.d007_ote_historical_contract.preflight import (
     sha256_file,
     verify_file_sha256,
 )
-from research.d007_ote_historical_contract.runner import (
-    HistoricalPipelineDeferred,
-    run_historical_execution,
-)
+from research.d007_ote_historical_contract.runner import run_historical_execution
 from research.d007_ote_historical_contract.schemas import (
     ALL_ARTIFACTS,
     JSON_ARTIFACTS,
@@ -73,10 +70,16 @@ def test_contract_identity_and_spec_are_frozen() -> None:
     assert {name for name, _digest in FROZEN_CONTRACT_IMPLEMENTATION_SHA256} == {
         "__init__.py",
         "__main__.py",
+        "artifacts.py",
         "config.py",
+        "empirical.py",
+        "loaders.py",
+        "pipeline.py",
         "preflight.py",
+        "reporting.py",
         "runner.py",
         "schemas.py",
+        "statistics.py",
     }
     expected_config_hash = dict(FROZEN_CONTRACT_IMPLEMENTATION_SHA256)["config.py"]
     assert normalized_config_sha256(
@@ -230,15 +233,13 @@ def test_output_artifact_membership_and_schemas_are_exact() -> None:
     assert len(ALL_ARTIFACTS) == len(set(ALL_ARTIFACTS))
 
 
-def test_contract_package_contains_no_historical_outcome_implementation() -> None:
+def test_contract_package_uses_no_unprojected_or_unregistered_table_calls() -> None:
     package = ROOT / "research/d007_ote_historical_contract"
     forbidden_calls = {
         "read_parquet",
         "scan_parquet",
         "to_parquet",
-        "ttest_1samp",
         "calculate_outcomes",
-        "evaluate_lifecycle",
         "construct_ote_range",
     }
     for path in package.glob("*.py"):
@@ -280,23 +281,31 @@ def test_outcome_blind_repository_preflight_authorizes_only_the_contract() -> No
     assert not (ROOT / OUTPUT_DIRECTORY).exists()
 
 
-def test_execute_command_remains_deferred_after_valid_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_execute_command_enters_authenticated_pipeline_only_after_valid_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
     from research.d007_ote_historical_contract import runner
 
     observed: dict[str, object] = {}
+    output = (ROOT / OUTPUT_DIRECTORY).resolve()
 
     def fake_prepare(*args: object, **kwargs: object) -> object:
         observed["args"] = args
         observed["kwargs"] = kwargs
-        return object()
+        return runner.AuthorizedExecution(ROOT, output, object())
+
+    def fake_pipeline(root: Path) -> Path:
+        observed["pipeline_root"] = root
+        return output
 
     monkeypatch.setattr(runner, "prepare_historical_execution", fake_prepare)
-    with pytest.raises(HistoricalPipelineDeferred, match="HISTORICAL_PIPELINE_DEFERRED"):
-        run_historical_execution(ROOT, authorization=EXECUTION_AUTHORIZATION)
+    import research.d007_ote_historical_contract.pipeline as pipeline
+
+    monkeypatch.setattr(pipeline, "run_authenticated_historical_pipeline", fake_pipeline)
+    assert run_historical_execution(ROOT, authorization=EXECUTION_AUTHORIZATION) == output
     assert observed["kwargs"] == {
         "authorization": EXECUTION_AUTHORIZATION,
         "contract": DEFAULT_CONTRACT,
     }
+    assert observed["pipeline_root"] == ROOT
 
 
 def test_default_constructor_and_altered_schema_fail_closed() -> None:
