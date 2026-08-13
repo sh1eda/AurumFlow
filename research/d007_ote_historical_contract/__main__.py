@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import EXECUTION_AUTHORIZATION
 from .preflight import run_contract_preflight
-from .runner import HistoricalPipelineDeferred, run_historical_execution
+from .runner import run_historical_execution
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,11 +30,9 @@ def main(argv: list[str] | None = None) -> int:
         result = run_contract_preflight(root, authorization=args.authorization)
         print(json.dumps(result.to_dict(), sort_keys=True))
         return 0
-    try:
-        run_historical_execution(root, authorization=args.authorization)
-    except HistoricalPipelineDeferred as exc:
-        raise SystemExit(str(exc)) from exc
-    raise AssertionError("D007 historical execution returned without an output path")
+    output = run_historical_execution(root, authorization=args.authorization)
+    print(output)
+    return 0
 
 
 if __name__ == "__main__":

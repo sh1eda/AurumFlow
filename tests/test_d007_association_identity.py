@@ -94,7 +94,10 @@ def test_d004_exact_unique_association_and_stable_identity() -> None:
     assert first.e4_sequence_id == "e4-a"
     assert first.e4_validation_year == 2024
     assert first.e4_anchor_year == 2024
-    assert first.association_id.startswith("d007-assoc-")
+    assert first.association_id == (
+        "d007-assoc-"
+        "5d2f54524bfbcab23c593dbc25fc4961dfedae75b968464b62200af03610efb2"
+    )
     assert first.exclusion_reason is None
 
 
@@ -217,6 +220,8 @@ def test_d006_multiple_e4_candidates_use_latest_then_stable_ids() -> None:
 def test_d006_lifecycle_ineligibility_and_terminal_boundaries_fail_closed() -> None:
     sequence = _e4("e4-a", "2024-05-01T13:45:00Z")
     block = _block()
+    same_bar = _block(first_touch_at=block.causal_availability)
+    assert associate_d006_to_e4(same_bar, [sequence]).associated
     assert associate_d006_to_e4(
         replace(block, preavailability_interaction=True), [sequence]
     ).exclusion_reason == "lifecycle_ineligible_block"

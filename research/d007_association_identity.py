@@ -408,8 +408,8 @@ class D006BlockIdentity:
         _require_grid(self.expiry_deadline, 5, "D006 expiry_deadline")
         if self.confirmation_at != self.causal_availability:
             raise ValueError("D006 confirmation and causal availability must agree")
-        if not self.causal_availability < self.first_touch_at < self.expiry_deadline:
-            raise ValueError("D006 first touch must be after availability and before expiry")
+        if not self.causal_availability <= self.first_touch_at < self.expiry_deadline:
+            raise ValueError("D006 first touch must be no earlier than availability and before expiry")
         if self.expiry_deadline != self.causal_availability + pd.Timedelta(hours=24):
             raise ValueError("D006 expiry deadline must be exactly 24 hours")
         if not pd.notna(self.range_size) or self.range_size <= 0:
