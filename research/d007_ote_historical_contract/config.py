@@ -16,7 +16,11 @@ CLARIFICATION_SPEC_PATH = Path("docs/D007_METHODOLOGY_CLARIFICATION.md")
 CLARIFICATION_SPEC_SHA256 = "b5637a24ce9cb97c35e68636d17fe2359396397422652d1ff5b2d3c2811f087b"
 CLARIFICATION_MODULE_PATH = Path("research/d007_methodology_clarification.py")
 CLARIFICATION_MODULE_SHA256 = "cf58d7f34b5b00ccc1168cb60a85f417ecc1527c276641213084515e97cd5ca1"
-FROZEN_CONTRACT_FINGERPRINT = "952658033175b00c880883bfb034c6ee20c49d376dd72418e084b3f1b0244078"
+ASSOCIATION_SPEC_PATH = Path("docs/D007_ASSOCIATION_IDENTITY_CLARIFICATION.md")
+ASSOCIATION_SPEC_SHA256 = "a885365ff2fb4004792a0af54b9eab4e51ad1b9095ed650d458306050305f2de"
+ASSOCIATION_MODULE_PATH = Path("research/d007_association_identity.py")
+ASSOCIATION_MODULE_SHA256 = "02c7ba7f64fb7aac5b6ab9ba17e1a24eae60fe6398c5f2e3b978616a10130553"
+FROZEN_CONTRACT_FINGERPRINT = "6c30867112c1c50acef36e276a72987b791bcf1ac8efd76e78d441b35c60507b"
 FROZEN_SCHEMA_SHA256 = "703f6c0d61e7d73cf13ad14e36732abbb91acf141f104ec46ea4f03252061d31"
 EXECUTION_AUTHORIZATION = "EXECUTE_FROZEN_D007_OTE_2022_2025"
 CANONICAL_MODULE = "research.d007_ote_historical_contract"
@@ -51,24 +55,27 @@ D005_E4_ARTIFACT_SHA256 = (
 FROZEN_CONTRACT_IMPLEMENTATION_SHA256 = (
     ("__init__.py", "f6d2f94b05d9410d7d1bdf25ab7138b73f6f44184f0730d33189bdef3113588a"),
     ("__main__.py", "53caca90c43d3b8f8c9fe7b65dadd531ce8620cd5ef2d7a80c7ddddd6710f729"),
-    ("config.py", "5814125aea70e9c1bbdabc564f7d1f90f9f687e9e38515fe5b6e50a383702597"),
-    ("preflight.py", "5d131d68046dca1dff32c2d579dcc4b4016017e6ebadb9770c436b7790ab1cd6"),
+    ("config.py", "12c81a9afd3fa9fdabaa1aacaa206211c26270dbd9df98d7c7508b3692f77f8a"),
+    ("preflight.py", "c85861e2ef67bc45df260a90258e24259ce94794edfde4189c50c5415150a07c"),
     ("runner.py", "88d3fc00a9722ffa827f782b8fd00d3e69cc533c576dceb69c87ee3f9f46f9b0"),
     ("schemas.py", "9a085db7ca73256575b1c90c490dc1c8e97bae49830e4ba54d57ec23397933b0"),
 )
 
 ALLOWED_CHANGED_PREFIXES = (
     "docs/D007_METHODOLOGY_CLARIFICATION.md",
+    "docs/D007_ASSOCIATION_IDENTITY_CLARIFICATION.md",
     "docs/D007_HISTORICAL_EXECUTION_CONTRACT.md",
     "research/d007_methodology_clarification.py",
+    "research/d007_association_identity.py",
     "research/d007_ote_research/guardrails.py",
     "research/d007_ote_historical_contract/",
     "tests/test_d007_methodology_clarification.py",
+    "tests/test_d007_association_identity.py",
     "tests/test_d007_historical_contract.py",
 )
 
 VALIDATION_COMMANDS = (
-    "python -m pytest tests/test_d007_methodology_clarification.py tests/test_d007_historical_contract.py tests/test_d007_ote_research.py -q",
+    "python -m pytest tests/test_d007_association_identity.py tests/test_d007_methodology_clarification.py tests/test_d007_historical_contract.py tests/test_d007_ote_research.py -q",
     "python -m pytest tests/test_d005_e4_1h_5m_reversal_replication.py tests/test_d005_e5_reporting_hardening.py tests/test_d005_e6_future_blind_replication.py -q",
     "python -m pytest tests/test_d006_rejection_block_research.py tests/test_d006_historical_source.py tests/test_d006_historical_context.py tests/test_d006_historical_execution.py -q",
     "python -m research.d007_ote_historical_contract preflight --authorization EXECUTE_FROZEN_D007_OTE_2022_2025",
@@ -232,6 +239,10 @@ class HistoricalExecutionContract:
         payload.update(
             {
                 "canonical_execution_command": CANONICAL_EXECUTION_COMMAND,
+                "association_module_path": ASSOCIATION_MODULE_PATH.as_posix(),
+                "association_module_sha256": ASSOCIATION_MODULE_SHA256,
+                "association_spec_path": ASSOCIATION_SPEC_PATH.as_posix(),
+                "association_spec_sha256": ASSOCIATION_SPEC_SHA256,
                 "clarification_module_path": CLARIFICATION_MODULE_PATH.as_posix(),
                 "clarification_module_sha256": CLARIFICATION_MODULE_SHA256,
                 "clarification_spec_path": CLARIFICATION_SPEC_PATH.as_posix(),
@@ -274,6 +285,10 @@ def validate_frozen_contract(contract: HistoricalExecutionContract = DEFAULT_CON
 
 
 __all__ = [
+    "ASSOCIATION_MODULE_PATH",
+    "ASSOCIATION_MODULE_SHA256",
+    "ASSOCIATION_SPEC_PATH",
+    "ASSOCIATION_SPEC_SHA256",
     "CANONICAL_EXECUTION_COMMAND",
     "CLARIFICATION_MODULE_PATH",
     "CLARIFICATION_MODULE_SHA256",

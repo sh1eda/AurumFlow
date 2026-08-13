@@ -9,6 +9,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from research.d007_association_identity import (
+    ADDENDUM_SHA256 as ASSOCIATION_ADDENDUM_SHA256,
+    verify_association_projection_contract,
+)
 from research.d007_methodology_clarification import (
     ADDENDUM_SHA256,
     named_trading_date,
@@ -19,6 +23,10 @@ from research.d007_ote_research.preflight import run_preflight as run_synthetic_
 
 from .config import (
     ALLOWED_CHANGED_PREFIXES,
+    ASSOCIATION_MODULE_PATH,
+    ASSOCIATION_MODULE_SHA256,
+    ASSOCIATION_SPEC_PATH,
+    ASSOCIATION_SPEC_SHA256,
     CLARIFICATION_MODULE_PATH,
     CLARIFICATION_MODULE_SHA256,
     CLARIFICATION_SPEC_PATH,
@@ -57,6 +65,9 @@ class ContractPreflightResult:
     clarification_addendum_sha256: str
     clarification_module_sha256: str
     clarification_dependency_hashes: dict[str, str]
+    association_addendum_sha256: str
+    association_module_sha256: str
+    association_projection_hashes: dict[str, str]
     d005_e4_artifact_hashes: dict[str, str]
     contract_implementation_hashes: dict[str, str]
     d004_reproducibility_sha256: str
@@ -419,10 +430,23 @@ def run_contract_preflight(
         CLARIFICATION_MODULE_SHA256,
         "D007 methodology clarification module",
     )
+    association_spec = verify_file_sha256(
+        root / ASSOCIATION_SPEC_PATH,
+        ASSOCIATION_SPEC_SHA256,
+        "D007 association identity clarification addendum",
+    )
+    association_module = verify_file_sha256(
+        root / ASSOCIATION_MODULE_PATH,
+        ASSOCIATION_MODULE_SHA256,
+        "D007 association identity clarification module",
+    )
     if clarification_spec != ADDENDUM_SHA256:
         raise ContractPreflightError("D007 clarification addendum identity mismatch")
+    if association_spec != ASSOCIATION_ADDENDUM_SHA256:
+        raise ContractPreflightError("D007 association addendum identity mismatch")
     try:
         clarification_dependencies = verify_upstream_identities(root)
+        association_projections = verify_association_projection_contract(root)
     except ValueError as error:
         raise ContractPreflightError(str(error)) from error
     synthetic_changed_paths = tuple(
@@ -451,6 +475,9 @@ def run_contract_preflight(
         clarification_addendum_sha256=clarification_spec,
         clarification_module_sha256=clarification_module,
         clarification_dependency_hashes=clarification_dependencies,
+        association_addendum_sha256=association_spec,
+        association_module_sha256=association_module,
+        association_projection_hashes=association_projections,
         d005_e4_artifact_hashes=artifacts,
         contract_implementation_hashes=implementation_hashes,
         d004_reproducibility_sha256=d004_reproducibility,

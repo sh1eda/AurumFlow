@@ -9,6 +9,10 @@ import pytest
 
 from research.d007_ote_historical_contract.__main__ import build_parser
 from research.d007_ote_historical_contract.config import (
+    ASSOCIATION_MODULE_PATH,
+    ASSOCIATION_MODULE_SHA256,
+    ASSOCIATION_SPEC_PATH,
+    ASSOCIATION_SPEC_SHA256,
     CLARIFICATION_MODULE_PATH,
     CLARIFICATION_MODULE_SHA256,
     CLARIFICATION_SPEC_PATH,
@@ -62,6 +66,8 @@ def test_contract_identity_and_spec_are_frozen() -> None:
     assert sha256_file(ROOT / CONTRACT_SPEC_PATH) == CONTRACT_SPEC_SHA256
     assert sha256_file(ROOT / CLARIFICATION_SPEC_PATH) == CLARIFICATION_SPEC_SHA256
     assert sha256_file(ROOT / CLARIFICATION_MODULE_PATH) == CLARIFICATION_MODULE_SHA256
+    assert sha256_file(ROOT / ASSOCIATION_SPEC_PATH) == ASSOCIATION_SPEC_SHA256
+    assert sha256_file(ROOT / ASSOCIATION_MODULE_PATH) == ASSOCIATION_MODULE_SHA256
     assert DEFAULT_CONTRACT.schema_sha256 == schema_fingerprint()
     assert schema_fingerprint() == FROZEN_SCHEMA_SHA256
     assert {name for name, _digest in FROZEN_CONTRACT_IMPLEMENTATION_SHA256} == {
@@ -126,7 +132,10 @@ def test_changed_path_ownership_is_contract_scoped() -> None:
     assert_allowed_changed_paths(
         (
             "docs/D007_HISTORICAL_EXECUTION_CONTRACT.md",
+            "docs/D007_ASSOCIATION_IDENTITY_CLARIFICATION.md",
+            "research/d007_association_identity.py",
             "research/d007_ote_historical_contract/preflight.py",
+            "tests/test_d007_association_identity.py",
             "tests/test_d007_historical_contract.py",
         )
     )
@@ -259,6 +268,9 @@ def test_outcome_blind_repository_preflight_authorizes_only_the_contract() -> No
     assert result.clarification_addendum_sha256 == CLARIFICATION_SPEC_SHA256
     assert result.clarification_module_sha256 == CLARIFICATION_MODULE_SHA256
     assert result.clarification_dependency_hashes
+    assert result.association_addendum_sha256 == ASSOCIATION_SPEC_SHA256
+    assert result.association_module_sha256 == ASSOCIATION_MODULE_SHA256
+    assert result.association_projection_hashes
     assert result.decoded_market_rows == 0
     assert result.constructed_d007_events == 0
     assert result.accessed_historical_outcomes is False
