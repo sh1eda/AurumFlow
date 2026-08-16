@@ -132,10 +132,22 @@ def test_full_empirical_composition_populates_associations_ablations_redundancy_
             "first_touch_timestamp", "mitigation_timestamp", "invalidation_timestamp", "expiry_timestamp",
             "expiry_deadline", "preavailability_interaction",
         ])
+        neutral_context = pd.DataFrame([{
+            "snapshot_id": f"neutral-{name}",
+            "evaluation_at": range_.range_available_at,
+            "mapping_name": "1h_5m",
+            "mapping_variant": "1h_5m",
+            "optional_1m_refinement": False,
+            "parent_timeframe": "1H",
+            "reaction_timeframe": "5m",
+            "state": "neutral",
+            "direction": 0,
+            "evidence_ids": [],
+        }])
         preliminary = build_empirical_package(
             projected_1m=frame,
             sequences=(sequence,),
-            upstream={"daily_events.parquet": pd.DataFrame([d004]), "structural_blocks.parquet": d006, "displacement_anchors.parquet": _anchor_frame(sequence)},
+            upstream={"daily_events.parquet": pd.DataFrame([d004]), "context_snapshots.parquet": neutral_context, "structural_blocks.parquet": d006, "displacement_anchors.parquet": _anchor_frame(sequence)},
         )
         touch = pd.Timestamp(preliminary.package.tables["primary_treatments.parquet"].iloc[0]["first_touch_at"])
         d006_row = {
@@ -156,8 +168,9 @@ def test_full_empirical_composition_populates_associations_ablations_redundancy_
             "first_touch_timestamp": None,
         }
         d006 = pd.DataFrame([d006_row, untouched])
-        result = build_empirical_package(projected_1m=frame, sequences=(sequence,), upstream={"daily_events.parquet": pd.DataFrame([d004]), "structural_blocks.parquet": d006, "displacement_anchors.parquet": _anchor_frame(sequence)})
-        repeated = build_empirical_package(projected_1m=frame, sequences=(sequence,), upstream={"daily_events.parquet": pd.DataFrame([d004]), "structural_blocks.parquet": d006, "displacement_anchors.parquet": _anchor_frame(sequence)})
+        upstream = {"daily_events.parquet": pd.DataFrame([d004]), "context_snapshots.parquet": neutral_context, "structural_blocks.parquet": d006, "displacement_anchors.parquet": _anchor_frame(sequence)}
+        result = build_empirical_package(projected_1m=frame, sequences=(sequence,), upstream=upstream)
+        repeated = build_empirical_package(projected_1m=frame, sequences=(sequence,), upstream=upstream)
         assert repeated.package.json_objects["source_audit.json"] == result.package.json_objects["source_audit.json"]
         assert repeated.package.json_objects["run_manifest.json"] == result.package.json_objects["run_manifest.json"]
         assert set(result.package.tables) == set(TABLE_SCHEMAS)
@@ -220,6 +233,9 @@ def test_full_empirical_composition_populates_associations_ablations_redundancy_
             assert ablation["identical_cohort"] == expected_cohort
         assert result.result["redundancy"]["interaction_ablations"]["against_d005_context_negative_control"] == "NOT_APPLICABLE_NEGATIVE_CONTROL"
         redundancy = result.package.tables["redundancy_audit.parquet"]
+        context_redundancy = redundancy.loc[redundancy["feature"] == "d005_context"].iloc[0]
+        assert context_redundancy["time_association_count"] == 0
+        assert context_redundancy["first_failure"] == "missing_constituent"
         assert (redundancy["time_association_denominator"] >= redundancy["price_overlap_denominator"]).all()
         missing_price = redundancy["price_overlap_denominator"] < redundancy["time_association_denominator"]
         assert (redundancy.loc[missing_price, "price_audit_state"] == "price_not_available").all()

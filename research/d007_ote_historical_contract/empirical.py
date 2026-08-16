@@ -64,6 +64,25 @@ def _direction(value: object, field: str = "direction") -> Direction:
     return Direction(int(value))
 
 
+def _redundancy_direction(
+    value: object, field: str = "evidence direction"
+) -> Direction | None:
+    """Normalize frozen cross-milestone direction representations.
+
+    D005 structural artifacts use -1/0/+1, where neutral evidence cannot meet
+    D007's exact-agreement rule. D006 structural artifacts serialize the same
+    bearish/bullish semantics as strings. No other alias is accepted.
+    """
+
+    if isinstance(value, bool):
+        raise ValueError(f"{field} must be bullish/bearish, neutral, or -1/0/1")
+    if isinstance(value, str):
+        value = {"bullish": 1, "bearish": -1}.get(value.lower(), value)
+    if value == 0:
+        return None
+    return _direction(value, field)
+
+
 def _flag(row: Mapping[str, object], name: str, default: bool = False) -> bool:
     value = row.get(name, default)
     if not isinstance(value, bool):
@@ -93,6 +112,11 @@ def build_5m_bars(projected_1m: pd.DataFrame) -> tuple[ClosedBar, ...]:
     if frame["timestamp_utc"].duplicated().any():
         raise ValueError("one-minute timestamps must be unique")
     frame = frame.sort_values("timestamp_utc", kind="mergesort").reset_index(drop=True)
+    if any(
+        stamp.second or stamp.microsecond or stamp.nanosecond
+        for stamp in frame["timestamp_utc"]
+    ):
+        raise ValueError("one-minute timestamps must align to the minute grid")
     values = frame[["open", "high", "low", "close"]].apply(pd.to_numeric, errors="coerce")
     if values.isna().any().any() or not math.isfinite(float(values.to_numpy().sum())):
         raise ValueError("one-minute OHLC values must be finite")
@@ -104,7 +128,10 @@ def build_5m_bars(projected_1m: pd.DataFrame) -> tuple[ClosedBar, ...]:
         expected = tuple(opened + index * ONE_MINUTE for index in range(5))
         actual = tuple(group["timestamp_utc"])
         if actual != expected:
-            raise ValueError("five-minute aggregation has a missing or misaligned minute")
+            # Never synthesize or impute a partial bucket. Its absence lets the
+            # frozen construction, lifecycle, and endpoint checks reject only
+            # observations that require it.
+            continue
         bars.append(ClosedBar(
             bar_id=f"5m:{opened.isoformat()}", opened_at=opened,
             available_at=opened + FIVE_MINUTES, open=float(group.iloc[0]["open"]),
@@ -516,7 +543,9 @@ def select_redundancy_evidence(range_: OTERange, first_touch_at: object, rows: I
         terminal = next((row.get(name) for name in ("mitigation_at", "invalidation_at", "expiry_at", "invalidated_at", "terminal_at") if row.get(name) is not None), None)
         if not -60 <= signed <= 60 or available > touch or (terminal is not None and _utc(terminal, "terminal") <= range_.range_available_at):
             continue
-        row_direction = _direction(row.get("direction"), "evidence direction")
+        row_direction = _redundancy_direction(row.get("direction"))
+        if row_direction is None:
+            continue
         if not allow_opposite_direction and row_direction != range_.direction:
             continue
         candidates.append((row, signed))
@@ -524,7 +553,7 @@ def select_redundancy_evidence(range_: OTERange, first_touch_at: object, rows: I
         return RedundancyAssociation(None, None, "missing_constituent")
     minimum = min(abs(signed) for _, signed in candidates)
     tied = [(row, signed) for row, signed in candidates if abs(signed) == minimum]
-    if len({_direction(row.get("direction"), "evidence direction") for row, _ in tied}) != 1:
+    if len({_redundancy_direction(row.get("direction")) for row, _ in tied}) != 1:
         return RedundancyAssociation(None, None, "conflicting_constituents")
     row, signed = min(tied, key=lambda item: (_utc(item[0][time_key], time_key), str(item[0].get("evidence_id", item[0].get("anchor_id", "")))))
     identity = str(row.get("evidence_id", row.get("anchor_id", "")))

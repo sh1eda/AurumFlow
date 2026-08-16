@@ -125,7 +125,6 @@ def test_loader_rejects_missing_projection_schema_drift_hash_and_alternate_path_
     [
         (lambda: _market_frame().drop(columns="mid_close"), "projection columns missing"),
         (lambda: pd.concat([_market_frame(), _market_frame().iloc[[0]]], ignore_index=True), "duplicate"),
-        (lambda: _market_frame().iloc[::-1].reset_index(drop=True), "ordered"),
         (lambda: _market_frame("2026-01-01T00:00:00Z"), "2026-or-later"),
     ],
 )
@@ -141,6 +140,44 @@ def test_market_file_order_and_dst_safe_timestamp_normalization(tmp_path: Path) 
     result = load_market_bars(tmp_path, [later, earlier])
     assert result["timestamp_utc"].tolist() == sorted(result["timestamp_utc"].tolist())
     assert result["timestamp_utc"].iloc[0] == pd.Timestamp("2025-01-15T22:59:00Z")
+
+
+def test_authenticated_rows_are_stably_sorted_by_frozen_keys(tmp_path: Path) -> None:
+    market = _market_frame().iloc[::-1].reset_index(drop=True)
+    record = _record(tmp_path, "bars.parquet", market)
+    loaded_market = load_market_bars(tmp_path, [record])
+    assert loaded_market["timestamp_utc"].tolist() == sorted(
+        loaded_market["timestamp_utc"].tolist()
+    )
+
+    structural = pd.DataFrame(
+        {
+            "event_id": ["b", "a"],
+            "event_at": [
+                pd.Timestamp("2025-01-02T10:05:00Z"),
+                pd.Timestamp("2025-01-02T10:00:00Z"),
+            ],
+        }
+    )
+    path, digest, size = _write(tmp_path, "events.parquet", structural)
+    identity = ArtifactIdentity(
+        "TEST", "events.parquet", digest, None, None, "version.json", "0" * 64,
+        "TEST:1", "schema.json@0", ("event_id", "event_at"), "test",
+    )
+    signature = tuple(
+        (field.name, str(field.type), field.nullable)
+        for field in pq.ParquetFile(path).schema_arrow.remove_metadata()
+    )
+    loaded_structural = load_structural_artifact(
+        tmp_path,
+        identity,
+        expected_full_schema=signature,
+        expected_byte_size=size,
+        timestamp_columns=("event_at",),
+        unique_columns=("event_id",),
+        order_columns=("event_at", "event_id"),
+    )
+    assert loaded_structural["event_id"].tolist() == ["a", "b"]
 
 
 def test_structural_timestamp_naive_and_duplicate_identity_fail_closed(tmp_path: Path) -> None:
