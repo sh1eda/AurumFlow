@@ -272,7 +272,13 @@ def _normalize_utc(frame: pd.DataFrame, timestamp_columns: Sequence[str]) -> pd.
     return result
 
 
-def _check_unique_and_ordered(frame: pd.DataFrame, unique_columns: Sequence[str], order_columns: Sequence[str]) -> None:
+def _canonicalize_order(
+    frame: pd.DataFrame,
+    unique_columns: Sequence[str],
+    order_columns: Sequence[str],
+) -> pd.DataFrame:
+    """Validate identities and apply the frozen stable canonical ordering."""
+
     if unique_columns:
         if any(column not in frame for column in unique_columns):
             raise FrozenParquetLoadError("unique identity columns missing from projection")
@@ -281,9 +287,8 @@ def _check_unique_and_ordered(frame: pd.DataFrame, unique_columns: Sequence[str]
     if order_columns:
         if any(column not in frame for column in order_columns):
             raise FrozenParquetLoadError("order columns missing from projection")
-        ordered = frame.loc[:, list(order_columns)]
-        if not ordered.equals(ordered.sort_values(list(order_columns), kind="mergesort").reset_index(drop=True)):
-            raise FrozenParquetLoadError("projected Parquet rows are not deterministically ordered")
+        return frame.sort_values(list(order_columns), kind="mergesort").reset_index(drop=True)
+    return frame.reset_index(drop=True)
 
 
 def _registered_byte_size(root: Path, identity: ArtifactIdentity) -> int:
@@ -344,8 +349,7 @@ def load_structural_artifact(
     parquet = _authenticate_and_open(repository_root, artifact, parquet_file_factory)
     frame = _read_exact_projection(parquet, projection)
     frame = _normalize_utc(frame, timestamp_columns)
-    _check_unique_and_ordered(frame, unique_columns, order_columns)
-    return frame
+    return _canonicalize_order(frame, unique_columns, order_columns)
 
 
 def load_market_bars(
@@ -366,7 +370,7 @@ def load_market_bars(
         frame = _normalize_utc(frame, ("timestamp_utc",))
         if frame["timestamp_utc"].isna().any():
             raise FrozenParquetLoadError("market timestamps must be non-null")
-        _check_unique_and_ordered(frame, ("timestamp_utc",), ("timestamp_utc",))
+        frame = _canonicalize_order(frame, ("timestamp_utc",), ("timestamp_utc",))
         if frame["timestamp_utc"].ge(SOURCE_TERMINAL_EXCLUSIVE).any():
             raise FrozenParquetLoadError("market source contains a 2026-or-later timestamp")
         values = frame.loc[:, MARKET_PROJECTION[1:]].apply(pd.to_numeric, errors="coerce")
@@ -376,7 +380,7 @@ def load_market_bars(
             raise FrozenParquetLoadError("market OHLC values violate the frozen bar contract")
         pieces.append(frame.rename(columns={"mid_open": "open", "mid_high": "high", "mid_low": "low", "mid_close": "close"}))
     result = pd.concat(pieces, ignore_index=True)
-    _check_unique_and_ordered(result, ("timestamp_utc",), ("timestamp_utc",))
+    result = _canonicalize_order(result, ("timestamp_utc",), ("timestamp_utc",))
     return result.loc[:, GENERIC_OHLC_COLUMNS].copy(deep=True)
 
 

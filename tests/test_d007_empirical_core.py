@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pandas as pd
+import pytest
 
 from research.d007_methodology_clarification import D006BlockEvidence, named_trading_date
 from research.d007_ote_historical_contract.empirical import (
@@ -79,12 +80,17 @@ def test_projects_generic_minutes_and_reconstructs_bull_bear_without_future_muta
     assert len(aggregated) == 1 and aggregated[0].high == 105 and aggregated[0].available_at == stamp("2024-05-01 09:35+00:00")
     with pd.option_context("mode.chained_assignment", None):
         broken = pd.DataFrame(minutes).drop(index=2)
-    try:
-        build_5m_bars(broken)
-    except ValueError as error:
-        assert "missing" in str(error)
-    else:
-        raise AssertionError("partial 5m aggregation was accepted")
+    assert build_5m_bars(broken) == ()
+    second_bucket = pd.DataFrame(minutes).assign(
+        timestamp_utc=lambda frame: frame["timestamp_utc"] + pd.Timedelta(minutes=5)
+    )
+    complete_only = build_5m_bars(pd.concat([broken, second_bucket], ignore_index=True))
+    assert len(complete_only) == 1
+    assert complete_only[0].opened_at == stamp("2024-05-01 09:35+00:00")
+    off_grid = pd.DataFrame(minutes)
+    off_grid.loc[0, "timestamp_utc"] += pd.Timedelta(seconds=1)
+    with pytest.raises(ValueError, match="minute grid"):
+        build_5m_bars(off_grid)
 
     bull = reconstruct_ote_ranges(sequence(), source())
     bear = reconstruct_ote_ranges(sequence("s2", -1), source(-1))
@@ -177,6 +183,26 @@ def test_redundancy_boundaries_and_adequacy_dispositions_fail_closed() -> None:
     assert select_redundancy_evidence(range_, touch, [outside]).first_failure == "missing_constituent"
     opposing = dict(exact_low, evidence_id="opposite", direction=-1, available_at=range_.range_available_at + pd.Timedelta(minutes=60))
     assert select_redundancy_evidence(range_, touch, [exact_high, opposing], allow_opposite_direction=True).first_failure == "conflicting_constituents"
+
+    bullish_text = dict(exact_high, evidence_id="bullish-text", direction="bullish")
+    assert select_redundancy_evidence(range_, touch, [bullish_text]).evidence_id == "bullish-text"
+    assert select_redundancy_evidence(range_, touch, [dict(bullish_text, direction="bearish")]).first_failure == "missing_constituent"
+    neutral = dict(exact_low, evidence_id="neutral", direction=0, available_at=range_.range_available_at)
+    aligned = dict(exact_low, evidence_id="aligned", direction=1, available_at=range_.range_available_at + pd.Timedelta(minutes=1))
+    assert select_redundancy_evidence(range_, touch, [neutral, aligned]).evidence_id == "aligned"
+    with pytest.raises(ValueError, match="exactly -1 or 1"):
+        select_redundancy_evidence(range_, touch, [dict(neutral, direction="up")])
+
+    bearish_range = reconstruct_ote_ranges(sequence("bearish", -1), source(-1))[0]
+    bearish_touch = bearish_range.range_available_at + pd.Timedelta(hours=2)
+    bearish_text = {
+        "evidence_id": "bearish-text",
+        "available_at": bearish_range.range_available_at,
+        "direction": "bearish",
+    }
+    assert select_redundancy_evidence(
+        bearish_range, bearish_touch, [bearish_text]
+    ).evidence_id == "bearish-text"
     assert adequacy_requirements({})["status"] == "SAMPLE_INADEQUATE"
     adequate = {"constructed_ranges": 1000, "lifecycle_eligible": 800, "first_touches": 500, "untouched_controls": 500, "primary_pairs": 500, "bullish": 200, "bearish": 200, "endpoint_coverage": 1.0}
     adequate.update({f"pairs_{year}": 100 for year in (2022, 2023, 2024, 2025)})
